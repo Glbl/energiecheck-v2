@@ -24,6 +24,7 @@ export default function LandingPage() {
     };
 
     const params = new URLSearchParams(window.location.search);
+    const isFromQR = params.get('source') === 'qr' ? 'Yes' : 'No';
     const codeFromUrl = params.get('code') || "04091981P0001";
     setWorkerCode(codeFromUrl);
 
@@ -33,7 +34,8 @@ export default function LandingPage() {
           { 
             worker_code: codeFromUrl, 
             user_agent: navigator.userAgent,
-            device_type: getDeviceType() 
+            device_type: getDeviceType(),
+            scanned_qr: isFromQR // Aquí guardas si fue por QR o no, dependiendo de tu lógica para detectarlo 
           }
         ]);
         console.log("Visita registrada exitosamente");
