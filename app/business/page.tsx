@@ -7,14 +7,14 @@ export default function BusinessPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white p-6 md:p-12 font-sans">
       <Link href="/" className="inline-flex items-center text-orange-500 hover:text-orange-400 mb-8 transition-colors">
-        <ArrowLeft className="mr-2" size={20} /> Zurück zur Promotion
+        <ArrowLeft className="mr-2" size={20} /> Zurück zur ProMotion
       </Link>
 
       <header className="mb-12">
         <h1 className="text-4xl font-black text-white uppercase tracking-tighter mb-2">
           Vertriebspartner <span className="text-orange-500">Programm 2026</span>
         </h1>
-        <p className="text-gray-400">Estructura de comisiones y bonos de equipo para socios oficiales.</p>
+        <p className="text-gray-400">Provisionsstruktur und Teamboni für offizielle Partner.</p>
       </header>
 
       <div className="grid md:grid-cols-2 gap-8">
