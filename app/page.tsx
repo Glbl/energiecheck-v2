@@ -150,7 +150,7 @@ export default function LandingPage() {
                   level={"H"}
                   includeMargin={false}
                   imageSettings={{
-                    src: "/logo.png", // Asegúrate de subir logo.png a la carpeta public
+                    src: "/energiecheck.png", // Asegúrate de subir logo.png a la carpeta public
                     height: 45,
                     width: 45,
                     excavate: true,
