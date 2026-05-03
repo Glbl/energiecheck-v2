@@ -2,7 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { QRCodeSVG } from 'qrcode.react';
+import type { Metadata } from "next";
 
+export const metadata: Metadata = {
+  title: "Energiecheck-24 | ProMotion",
+  description: "Solar-Station Förderung Sichern",
+  icons: {
+    icon: "/energicheck.ico", // Esto apunta a tu archivo en la carpeta public
+  },
+};
 // Conexión segura usando las variables de entorno configuradas en Vercel
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
