@@ -28,6 +28,7 @@ export default function LandingPage() {
             user_agent: navigator.userAgent 
           }
         ]);
+        console.log("Registro exitoso en Supabase");
       } catch (error) {
         console.error("Error tracking visit:", error);
       }
