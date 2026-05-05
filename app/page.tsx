@@ -78,11 +78,11 @@ export default function LandingPage() {
         {/* TÍTULO PRINCIPAL CON BANDERAS */}
         <div className="relative w-full text-center mb-8">
           <div className="flex items-center justify-center gap-4 mb-2">
-            <img src="/germany-flag.jpg" alt="DE" className="w-8 h-auto shadow-lg" />
+            <img src="/germany-flag2.png" alt="DE" className="w-8 h-auto shadow-lg" />
             <h1 className="text-4xl md:text-5xl font-black uppercase leading-none tracking-tighter">
               ENERGIE <span className="text-[#d4e137] italic">FÖRDERUNG</span>
             </h1>
-            <img src="/germany-flag.jpg" alt="DE" className="w-8 h-auto shadow-lg" />
+            <img src="/germany-flag2.png" alt="DE" className="w-8 h-auto shadow-lg" />
           </div>
           <h1 className="text-4xl md:text-5xl font-black uppercase leading-none tracking-tighter">
             sichern
