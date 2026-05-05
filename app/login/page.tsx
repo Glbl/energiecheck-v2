@@ -25,7 +25,7 @@ export default function LoginPage() {
       .single();
 
     if (dbError || !data) {
-      setError('Usuario o contraseña incorrectos');
+      setError('Falscher Benutzername oder falsches Passwort');
       return;
     }
 

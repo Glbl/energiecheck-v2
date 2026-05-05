@@ -24,9 +24,9 @@ export default function LandingPage() {
     const code = params.get('code');
     if (code) {
       setWorkerId(code);
-      trackStep("Inicio ProMotion", code);
+      trackStep("PROMOTION START", code);
     } else {
-      trackStep("Inicio ProMotion (Sin ID)", workerId);
+      trackStep("PROMOTION START (Sin ID)", workerId);
     }
   }, []);
 
@@ -76,7 +76,7 @@ export default function LandingPage() {
               <Zap className="text-[#d4e137]" size={48} />
               <h2 className="text-4xl font-black uppercase italic leading-none">Bereit für die <span className="text-orange-500">Solar-Revolution?</span></h2>
               <p className="text-gray-400 leading-relaxed">Entdecke, wie du mit Energiecheck-24 deine Energiekosten senken und die Umwelt schützen kannst.</p>
-              <button onClick={() => handleNextStep(2, "Ventajas Solar")} className="w-full py-5 bg-white text-black font-black rounded-2xl uppercase flex justify-between px-8 items-center hover:bg-[#d4e137] transition-all group">
+              <button onClick={() => handleNextStep(2, " SOLAR VORTEILE")} className="w-full py-5 bg-white text-black font-black rounded-2xl uppercase flex justify-between px-8 items-center hover:bg-[#d4e137] transition-all group">
                 Weiter <ChevronRight className="group-hover:translate-x-2 transition-transform" />
               </button>
             </div>
@@ -91,7 +91,7 @@ export default function LandingPage() {
                 <div className="p-4 bg-white/5 rounded-2xl border border-white/10 italic text-[10px] font-bold uppercase tracking-widest text-center">TÜV Geprüft</div>
                 <div className="p-4 bg-white/5 rounded-2xl border border-white/10 italic text-[10px] font-bold uppercase tracking-widest text-center">Made in Germany</div>
               </div>
-              <button onClick={() => handleNextStep(3, "Ahorro Estimado")} className="w-full py-5 bg-white text-black font-black rounded-2xl uppercase flex justify-between px-8 items-center hover:bg-[#d4e137] transition-all">
+              <button onClick={() => handleNextStep(3, "ERSPARNIS-CHECK")} className="w-full py-5 bg-white text-black font-black rounded-2xl uppercase flex justify-between px-8 items-center hover:bg-[#d4e137] transition-all">
                 Weiter <ChevronRight />
               </button>
             </div>
@@ -106,7 +106,7 @@ export default function LandingPage() {
                 <li className="flex items-center gap-3 text-sm font-bold uppercase italic tracking-tighter"><CheckCircle2 className="text-[#d4e137]" size={16} /> 0€ Investitionskosten</li>
                 <li className="flex items-center gap-3 text-sm font-bold uppercase italic tracking-tighter"><CheckCircle2 className="text-[#d4e137]" size={16} /> Staatliche Förderung</li>
               </ul>
-              <button onClick={() => handleNextStep(4, "Bonus de 50€")} className="w-full py-5 bg-white text-black font-black rounded-2xl uppercase flex justify-between px-8 items-center hover:bg-[#d4e137] transition-all">
+              <button onClick={() => handleNextStep(4, "50€ BONUS-STEP")} className="w-full py-5 bg-white text-black font-black rounded-2xl uppercase flex justify-between px-8 items-center hover:bg-[#d4e137] transition-all">
                 Letzter Schritt <ChevronRight />
               </button>
             </div>
@@ -123,7 +123,7 @@ export default function LandingPage() {
               {/* ESTE LINK LLEVA AL CLIENTE AL FORMULARIO CON EL BONO */}
               <Link 
                 href={`/business?code=${workerId}`}
-                onClick={() => trackStep("Clic en Botón Final", workerId)}
+                onClick={() => trackStep("FINALE REGISTRIERUNG", workerId)}
                 className="w-full py-6 bg-orange-600 text-white font-black rounded-2xl uppercase text-center flex justify-center items-center shadow-xl hover:scale-[1.02] transition-all"
               >
                 JETZT BONUS SICHERN
