@@ -3,11 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { 
   User, Phone, Mail, CheckCircle, 
-  ArrowLeft, Gift, Sparkles 
+  ArrowLeft, Gift, Sparkles, AlertCircle 
 } from 'lucide-react';
 import Link from 'next/link';
 
-// 1. Inicialización de Supabase
+// 1. Inicialización de Supabase con variables de entorno
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -18,18 +18,23 @@ export default function BusinessPage() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [isSaved, setIsSaved] = useState(false);
-  const [workerId, setWorkerId] = useState("04091981P0001");
+  const [errorMessage, setErrorMessage] = useState('');
+  
+  // ID por defecto de Jose Alejandro Lorusso (JL040981)
+  const [workerId, setWorkerId] = useState("JL040981");
 
-  // Capturar el ID del trabajador desde la URL para activar el bono
+  // Capturar el ID del trabajador desde la URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
-    if (code) setWorkerId(code);
+    if (code) {
+      setWorkerId(code.trim().toUpperCase());
+    }
   }, []);
 
-  // Función para procesar la compra y comisión automática (Paso 8 del prototipo)
+  // Función para procesar la comisión automática (10%)
   const handlePurchase = async (customerId: string, amount: number) => {
-    const commission = amount * 0.10; // 10% de comisión para el trabajador
+    const commission = amount * 0.10;
     await supabase
       .from('customers')
       .update({ 
@@ -41,23 +46,38 @@ export default function BusinessPage() {
       .eq('id', customerId);
   };
 
-  // Función principal de registro (Paso 6: Guardado automático)
+  // Función principal de registro con manejo de Foreign Keys
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
+
+    // Limpieza estricta del ID para evitar conflictos (Error 409)
+    const cleanWorkerId = workerId.trim().toUpperCase();
 
     const { data, error } = await supabase.from('customers').insert([
       {
         full_name: fullName,
         phone: phone,
         email: email,
-        worker_id: workerId,
+        worker_id: cleanWorkerId,
         status: 'registered'
       }
     ]).select();
 
-    if (!error && data) {
+    if (error) {
+      console.error("Error detallado de Supabase:", error);
+      
+      // Error 23503: Violación de Foreign Key (El ID no existe en employees)
+      if (error.code === '23503') {
+        setErrorMessage(`Der Mitarbeiter-Code "${cleanWorkerId}" ist ungültig.`);
+      } else {
+        setErrorMessage("Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.");
+      }
+      return;
+    }
+
+    if (data) {
       setIsSaved(true);
-      // Simulamos la compra para que la comisión aparezca en el Dashboard
       await handlePurchase(data[0].id, 1000);
     }
   };
@@ -65,7 +85,6 @@ export default function BusinessPage() {
   return (
     <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center justify-center">
       
-      {/* Enlace de regreso al portal interno */}
       <div className="absolute top-6 left-6">
         <Link href="/login" className="flex items-center gap-2 text-gray-500 hover:text-white transition-all text-xs uppercase font-bold">
           <ArrowLeft size={16} /> Portal
@@ -75,7 +94,6 @@ export default function BusinessPage() {
       <main className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-orange-500 font-black italic text-3xl uppercase tracking-tighter">Energiecheck-24</h1>
-          <p className="text-gray-500 text-[10px] uppercase tracking-[0.3em] mt-2 font-bold">Direktregistrierung</p>
         </div>
 
         {isSaved ? (
@@ -83,12 +101,12 @@ export default function BusinessPage() {
             <CheckCircle className="text-[#d4e137] mx-auto mb-4" size={64} />
             <h2 className="text-2xl font-black uppercase italic">Vielen Dank!</h2>
             <p className="text-gray-400 text-sm mt-4 leading-relaxed">
-              Deine Daten und der <span className="text-[#d4e137] font-bold">50€ Gutschein</span> wurden erfolgreich im System registriert.
+              Deine Daten und el <span className="text-[#d4e137] font-bold">50€ Gutschein</span> wurden registriert.
             </p>
           </div>
         ) : (
           <div className="relative">
-            {/* TAG DEL BONO DE 50€ */}
+            {/* Tag Visual del Bono de 50€ */}
             <div className="absolute -top-4 -right-4 bg-[#d4e137] text-black text-[10px] font-black px-4 py-2 rounded-full rotate-12 shadow-xl z-10 flex items-center gap-2 animate-bounce">
               <Gift size={14} /> 50€ BONUS ACTIVATED
             </div>
@@ -102,9 +120,16 @@ export default function BusinessPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-black uppercase italic leading-none">Deine Anmeldung</h3>
-                  <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-1">ID: {workerId}</p>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-1">Ref-ID: {workerId}</p>
                 </div>
               </div>
+
+              {errorMessage && (
+                <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-2xl flex items-center gap-3 text-red-500 text-xs font-bold uppercase italic animate-shake">
+                  <AlertCircle size={18} />
+                  {errorMessage}
+                </div>
+              )}
               
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="relative">
@@ -135,7 +160,7 @@ export default function BusinessPage() {
                 </div>
 
                 <div className="pt-4">
-                  <button className="w-full py-5 bg-[#d4e137] text-black font-black rounded-2xl uppercase hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-[#d4e137]/20 text-base">
+                  <button className="w-full py-5 bg-[#d4e137] text-black font-black rounded-2xl uppercase hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-[#d4e137]/20">
                     BONUS SICHERN
                   </button>
                   <p className="text-[8px] text-gray-600 text-center mt-6 uppercase tracking-[0.2em] font-bold">
@@ -147,10 +172,6 @@ export default function BusinessPage() {
           </div>
         )}
       </main>
-
-      <footer className="mt-12 text-center">
-        <p className="text-[9px] uppercase tracking-[0.5em] font-black text-white/20 italic">Energiecheck-24 x ProMotion</p>
-      </footer>
     </div>
   );
 }
