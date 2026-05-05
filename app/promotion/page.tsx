@@ -148,7 +148,7 @@ export default function PromotionPage() {
             <div className="bg-[#d4e137] p-10 rounded-[3rem] text-black shadow-2xl">
               <Gift className="mx-auto mb-4" size={50} />
               <h2 className="text-3xl font-black uppercase italic leading-tight">FAST FERTIG!</h2>
-              <p className="font-bold text-sm mt-4 uppercase italic">Sichere dir ahora tu bono exclusivo.</p>
+              <p className="font-bold text-sm mt-4 uppercase italic">jetzt Ihr exklusiver Bonus.</p>
             </div>
             
             <div className="mt-12">
