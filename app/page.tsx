@@ -1,19 +1,50 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { createClient } from '@supabase/supabase-js';
 import { QRCodeSVG } from 'qrcode.react';
 
+// 1. Inicialización de Supabase fuera del componente para evitar el error de "nombre no encontrado"
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 export default function LandingPage() {
+  // Estados principales
+  const [sessionId] = useState(`sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [workerCode, setWorkerCode] = useState("04091981P0001");
+  const [step, setStep] = useState(1);
 
+  // 2. Función de rastreo optimizada con useCallback
+  const trackStep = useCallback(async (newStepName: string, timeInPrevStep: number) => {
+    try {
+      await supabase.from('user_funnel_logs').insert([{
+        session_id: sessionId,
+        worker_id: workerCode,
+        current_step: newStepName,
+        time_spent_seconds: timeInPrevStep,
+        action_type: 'navigation'
+      }]);
+    } catch (error) {
+      console.error("Error al registrar el paso:", error);
+    }
+  }, [sessionId, workerCode]);
+
+  // 3. Lógica para detectar el cambio de paso y medir el tiempo
   useEffect(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!supabaseUrl || !supabaseKey) return;
+    const startTime = Date.now();
+    const stepNames = ["Landing", "Anmeldung", "Erstellen", "Test", "Bestätigung"];
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    return () => {
+      const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+      if (timeSpent > 0) {
+        trackStep(stepNames[step - 1], timeSpent);
+      }
+    };
+  }, [step, trackStep]);
 
+  // 4. Lógica de visita inicial y parámetros de URL
+  useEffect(() => {
     const getDeviceType = () => {
       const ua = navigator.userAgent;
       if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) return "Tablet";
@@ -29,16 +60,14 @@ export default function LandingPage() {
 
     const trackVisit = async () => {
       try {
-        await supabase.from('leads_tracking').insert([
-          { 
-            worker_code: codeFromUrl, 
-            user_agent: navigator.userAgent,
-            device_type: getDeviceType(),
-            scanned_qr: isFromQR 
-          }
-        ]);
+        await supabase.from('leads_tracking').insert([{ 
+          worker_code: codeFromUrl, 
+          user_agent: navigator.userAgent,
+          device_type: getDeviceType(),
+          scanned_qr: isFromQR 
+        }]);
       } catch (err) {
-        console.error("Error técnico:", err);
+        console.error("Error técnico en visita:", err);
       }
     };
 
@@ -47,7 +76,6 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans overflow-x-hidden">
-      
       <nav className="p-4 flex justify-between items-center bg-black/40 backdrop-blur-md fixed top-0 w-full z-50">
         <span className="text-orange-500 font-black italic text-xs">ENERGIECHECK-24</span>
         <div className="bg-white/5 px-3 py-1 rounded-full border border-white/10">
@@ -56,8 +84,7 @@ export default function LandingPage() {
       </nav>
 
       <main className="max-w-xl mx-auto px-6 pt-20 pb-12 flex flex-col items-center">
-        
-        {/* TEXTO SUPERIOR */}
+        {/* HERO SECTION */}
         <div className="text-center mb-2 flex flex-col items-center">
           <h2 className="text-3xl md:text-4xl font-black tracking-tight">
             <span className="text-[#d4e137]">500€</span> <span className="text-white lowercase font-medium">sofort</span> <span className="text-white uppercase">CASH</span>
@@ -65,24 +92,21 @@ export default function LandingPage() {
           <span className="text-[#d4e137] text-xl font-bold mt-1">+</span>
         </div>
 
-        {/* IMAGEN DE PRODUCTOS - OPTIMIZADA */}
         <div className="w-full mb-0 transform scale-110 relative h-64 md:h-80">
           <Image 
             src="/produkte-bundle.webp" 
             alt="Energie Bundle" 
-            fill
-            priority
+            fill priority
             className="object-contain"
             sizes="(max-width: 768px) 100vw, 600px"
           />
         </div>
 
-        {/* TÍTULO CON BANDERAS */}
+        {/* PROMOTION TITLE */}
         <div className="relative w-full flex items-center justify-between mb-2 px-0 mt-4">
           <div className="relative w-8 h-6">
             <Image src="/germany-flag3.png" alt="DE" fill className="object-contain" />
           </div>
-          
           <div className="text-center flex flex-col items-center flex-1">
             <h1 className="text-4xl md:text-5xl font-black uppercase leading-none tracking-tighter">
               ENERGIE <span className="text-[#d4e137] italic font-medium">FÖRDERUNG</span>
@@ -91,13 +115,12 @@ export default function LandingPage() {
               sichern
             </h1>
           </div>
-
           <div className="relative w-8 h-6">
             <Image src="/germany-flag3.png" alt="DE" fill className="object-contain" />
           </div>
         </div>
 
-        {/* SECCIÓN FONDO Y BOTÓN */}
+        {/* CTA SECTION */}
         <div className="relative w-full pt-4 pb-12 flex flex-col items-center">
           <div className="absolute inset-0 z-0 flex justify-center items-center pointer-events-none">
             <div className="relative w-full h-full opacity-70 mix-blend-screen">
@@ -134,7 +157,6 @@ export default function LandingPage() {
                 30–50% Stromkosten sparen mit der <br/>
                 <span className="text-[#d4e137] font-bold italic">Eco-Home-E-Station</span>
               </p>
-
               <div className="text-lg md:text-xl font-bold space-y-1">
                 <p>In unter <span className="text-[#d4e137]">5 Minuten</span> starten</p>
                 <p>Bis zu <span className="text-[#d4e137]">820 €</span> verdienen</p>
@@ -162,7 +184,7 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="py-8 text-center">
+      <footer className="py-8 text-center border-t border-white/5">
         <p className="text-gray-800 text-[9px] uppercase tracking-widest">
           Energiecheck-24 | Technical Lead: Giovanni Lazo
         </p>
