@@ -1,71 +1,76 @@
 "use client";
-import React from 'react';
-import { ArrowLeft, TrendingUp, Users, Award } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
+import { User, Phone, Mail, CheckCircle, ArrowLeft, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
 export default function BusinessPage() {
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [isSaved, setIsSaved] = useState(false);
+  const [workerId, setWorkerId] = useState("04091981P0001");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (code) setWorkerId(code);
+  }, []);
+
+  const handlePurchase = async (customerId: string, amount: number) => {
+    const commission = amount * 0.10;
+    await supabase.from('customers').update({ 
+      status: 'purchased',
+      purchase_amount: amount,
+      commission_earned: commission,
+      commission_status: 'pending'
+    }).eq('id', customerId);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { data, error } = await supabase.from('customers').insert([
+      { full_name: fullName, phone: phone, email: email, worker_id: workerId, status: 'registered' }
+    ]).select();
+
+    if (!error && data) {
+      setIsSaved(true);
+      await handlePurchase(data[0].id, 1000);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-6 md:p-12 font-sans">
-      <Link href="/" className="inline-flex items-center text-orange-500 hover:text-orange-400 mb-8 transition-colors">
-        <ArrowLeft className="mr-2" size={20} /> Zurück zur ProMotion
-      </Link>
-
-      <header className="mb-12">
-        <h1 className="text-4xl font-black text-white uppercase tracking-tighter mb-2">
-          Vertriebspartner <span className="text-orange-500">Programm 2026</span>
-        </h1>
-        <p className="text-gray-400">Provisionsstruktur und Teamboni für offizielle Partner.</p>
-      </header>
-
-      <div className="grid md:grid-cols-2 gap-8">
-        {/* Nivel 1 */}
-        <div className="bg-white/5 border border-white/10 p-8 rounded-[2rem] hover:border-orange-500/50 transition-all">
-          <div className="flex items-center mb-6">
-            <Users className="text-orange-500 mr-3" />
-            <h2 className="text-xl font-bold uppercase tracking-wider">Empfehlungsgeber</h2>
-          </div>
-          <p className="text-5xl font-black mb-8 italic">175€ <span className="text-sm font-normal text-gray-400 uppercase">Max. Prämie</span></p>
-          <ul className="space-y-4">
-            <li className="flex justify-between border-b border-white/5 pb-2"><span>Basis-Station</span> <span className="font-bold text-orange-500">100€</span></li>
-            <li className="flex justify-between border-b border-white/5 pb-2"><span>Mini-Station</span> <span className="font-bold text-orange-500">50€</span></li>
-            <li className="flex justify-between"><span>Tank-Station</span> <span className="font-bold text-orange-500">25€</span></li>
-          </ul>
-        </div>
-
-        {/* Nivel 2 */}
-        <div className="bg-gradient-to-br from-purple-900/20 to-transparent border border-purple-500/30 p-8 rounded-[2rem] hover:border-purple-500 transition-all">
-          <div className="flex items-center mb-6">
-            <TrendingUp className="text-purple-500 mr-3" />
-            <h2 className="text-xl font-bold uppercase tracking-wider text-purple-400">Vertriebspartner</h2>
-          </div>
-          <p className="text-5xl font-black mb-8 italic text-purple-400">300€ <span className="text-sm font-normal text-gray-400 uppercase">Provision</span></p>
-          <ul className="space-y-4">
-            <li className="flex justify-between border-b border-purple-500/10 pb-2"><span>Basis-Station</span> <span className="font-bold">200€</span></li>
-            <li className="flex justify-between border-b border-purple-500/10 pb-2"><span>Mini-Station</span> <span className="font-bold">50€</span></li>
-            <li className="flex justify-between"><span>Tank-Station</span> <span className="font-bold">50€</span></li>
-          </ul>
-        </div>
+    <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center justify-center">
+      <div className="absolute top-6 left-6">
+        <Link href="/login" className="flex items-center gap-2 text-gray-500 hover:text-white transition-all text-xs uppercase font-bold">
+          <ArrowLeft size={16} /> Login Portal
+        </Link>
       </div>
-
-      {/* Bonos Especiales */}
-      <section className="mt-12 bg-white/5 border border-white/10 rounded-[2.5rem] p-8 md:p-12 text-center">
-        <Award className="mx-auto mb-4 text-green-400" size={48} />
-        <h3 className="text-2xl font-black mb-8 italic uppercase">Umsatz-Beteiligung (Team 4-6 Pers.)</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-6 bg-black/40 rounded-2xl border border-white/5">
-            <p className="text-gray-500 text-xs uppercase mb-2">Ab 150/Monat</p>
-            <p className="text-3xl font-black text-white">5.000€</p>
-          </div>
-          <div className="p-6 bg-black/40 rounded-2xl border border-white/5">
-            <p className="text-gray-500 text-xs uppercase mb-2">Ab 300/Monat</p>
-            <p className="text-3xl font-black text-white">12.000€</p>
-          </div>
-          <div className="p-6 bg-black/40 rounded-2xl border border-white/5 shadow-[0_0_30px_rgba(34,197,94,0.1)]">
-            <p className="text-gray-500 text-xs uppercase mb-2">Ab 500/Monat</p>
-            <p className="text-3xl font-black text-green-400">15.000€</p>
-          </div>
+      <main className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-orange-500 font-black italic text-3xl uppercase tracking-tighter">Energiecheck-24</h1>
         </div>
-      </section>
+        {isSaved ? (
+          <div className="text-center p-12 bg-white/5 border border-[#d4e137]/30 rounded-[2.5rem]">
+            <CheckCircle className="text-[#d4e137] mx-auto mb-4" size={60} />
+            <h2 className="text-2xl font-black uppercase italic text-white font-sans">Danke!</h2>
+          </div>
+        ) : (
+          <div className="bg-white/5 border border-white/10 p-8 rounded-[3rem]">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <input type="text" placeholder="Name" required className="w-full bg-black border border-white/10 p-4 rounded-2xl text-white" onChange={(e) => setFullName(e.target.value)} />
+              <input type="tel" placeholder="Telefon" required className="w-full bg-black border border-white/10 p-4 rounded-2xl text-white" onChange={(e) => setPhone(e.target.value)} />
+              <input type="email" placeholder="E-Mail" required className="w-full bg-black border border-white/10 p-4 rounded-2xl text-white" onChange={(e) => setEmail(e.target.value)} />
+              <button className="w-full py-5 bg-[#d4e137] text-black font-black rounded-2xl uppercase">Anmelden</button>
+            </form>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
