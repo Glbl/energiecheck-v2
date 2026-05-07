@@ -47,7 +47,7 @@ export default function LoginPage() {
       if (user.role === 'admin') {
         router.push('/dashboard/admin');
       } else if (user.role === 'worker') {
-        router.push('/dashboard/employee');
+        router.push('/dashboard/worker');
       } else {
         alert("Rol no reconocido: " + user.role);
       }
