@@ -29,12 +29,12 @@ export default function LoginPage() {
 
       if (error) {
         console.error("Supabase Error:", error);
-        alert("Error de base de datos. Por favor, intenta de nuevo.");
+        alert("Datenbankfehler. Bitte versuchen Sie es erneut.");
         return;
       }
 
       if (!user) {
-        alert("Usuario o contraseña incorrectos.");
+        alert("Falscher Benutzername oder falsches Passwort.");
         return;
       }
 
@@ -49,12 +49,12 @@ export default function LoginPage() {
       } else if (user.role === 'worker') {
         router.push('/dashboard/worker');
       } else {
-        alert("Rol no reconocido: " + user.role);
+        alert("Nicht anerkannte Rolle: " + user.role);
       }
 
     } catch (err) {
       console.error("Error crítico:", err);
-      alert("Ocurrió un error inesperado.");
+      alert("Es ist ein unerwarteter Fehler aufgetreten.");
     } finally {
       setLoading(false);
     }
