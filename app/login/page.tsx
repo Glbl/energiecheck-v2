@@ -15,37 +15,46 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Forzamos que 'username' sea tratado como String para evitar el error 400
-      const { data: user, error } = await supabase
-        .from('employees')
-        .select('*')
-        .eq('id_employee', String(username).trim()) 
-        .eq('password', String(password).trim())
-        .single();
+    // 1. Forzamos que los valores sean tratados como strings y limpiamos espacios
+    const identifier = String(username).trim();
+    const pass = String(password).trim();
 
-      if (error || !user) {
-        console.error("Login Error:", error);
-        alert("Anmeldedaten falsch o ID no existe.");
-      } else {
-        // GUARDAR DATOS EN LOCALSTORAGE
-        localStorage.setItem('worker_id', user.id_employee);
-        localStorage.setItem('worker_name', user.full_name);
-        localStorage.setItem('user_role', user.role);
+    // 2. Realizamos la consulta
+    const { data: user, error, status } = await supabase
+      .from('employees')
+      .select('*')
+      .eq('id_employee', identifier)
+      .eq('password', pass)
+      .maybeSingle(); // Usamos maybeSingle para evitar errores si no encuentra nada
 
-        // REDIRECCIÓN SEGÚN ROL
-        if (user.role === 'admin') {
-          router.push('/dashboard/admin');
-        } else {
-          // Esta es la nueva ruta que creaste: app/dashboard/employee/page.tsx
-          router.push('/dashboard/employee');
-        }
-      }
-    } catch (err) {
-      console.error("System Error:", err);
-    } finally {
-      setLoading(false);
+    if (error) {
+      console.error("Error de Supabase:", error.message);
+      alert(`Error de conexión: ${error.message}`);
+      return;
     }
-  };
+
+    if (!user) {
+      alert("ID de usuario o contraseña incorrectos.");
+      return;
+    }
+
+    // 3. Si llegamos aquí, el login es exitoso
+    localStorage.setItem('worker_id', user.id_employee);
+    localStorage.setItem('user_role', user.role);
+
+    if (user.role === 'admin') {
+      router.push('/dashboard/admin');
+    } else {
+      router.push('/dashboard/employee');
+    }
+
+  } catch (err) {
+    console.error("Error inesperado:", err);
+    alert("Ocurrió un error inesperado en el sistema.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-[#05070a] flex items-center justify-center p-6">
