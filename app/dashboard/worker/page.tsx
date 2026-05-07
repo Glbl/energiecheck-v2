@@ -76,7 +76,7 @@ export default function WorkerDashboard() {
                 size={220}
                 level="H"
                 imageSettings={{
-                  src: "/logo-qr.png", // Asegúrate de subir un logo pequeño a public/logo-qr.png
+                  src: "/energiecheck.png", // Asegúrate de subir un logo pequeño a public/logo-qr.png
                   height: 45, width: 45, excavate: true,
                 }}
               />
