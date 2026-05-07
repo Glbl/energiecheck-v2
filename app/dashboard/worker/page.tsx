@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { QRCodeSVG } from 'qrcode.react';
-import { Copy, Check, Users, DollarSign, LayoutDashboard, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Copy, Check, Users, DollarSign, LayoutDashboard, CheckCircle2, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const supabase = createClient(
@@ -13,154 +13,132 @@ const supabase = createClient(
 export default function WorkerDashboard() {
   const router = useRouter();
   const [workerId, setWorkerId] = useState("");
-  const [employee, setEmployee] = useState<any>(null);
+  const [workerName, setWorkerName] = useState("");
   const [customers, setCustomers] = useState<any[]>([]);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // LA URL CON EL TRACKING CORRECTO: Incluye &source=qr para el QR
-  const baseUrl = "https://energiecheck-v2-git-main-gb128128-6735s-projects.vercel.app/promotion";
-  const qrLink = workerId ? `${baseUrl}?code=${workerId}&source=qr` : "";
-  const directLink = workerId ? `${baseUrl}?code=${workerId}` : ""; // Enlace limpio para copiar
+  // URL DE PROMOCIÓN DINÁMICA
+  const promotionLink = workerId 
+    ? `https://energiecheck-v2-git-main-gb128128-6735s-projects.vercel.app/promotion?code=${workerId}`
+    : "";
 
   useEffect(() => {
-    // 1. Verificamos que sea un empleado logueado
-    const role = localStorage.getItem('user_role');
-    const storedWorkerId = localStorage.getItem('worker_code'); // o como lo hayas llamado en el login
-
-    if (!role || role !== 'worker') {
-      router.push('/login');
-      return;
-    }
-
-    if (storedWorkerId) {
-      setWorkerId(storedWorkerId);
-      fetchDashboardData(storedWorkerId);
-    } else {
-      // Fallback si no está el código en el storage
-      setLoading(false);
-    }
-  }, [router]);
-
-  async function fetchDashboardData(id: string) {
-    const { data: empData } = await supabase.from('employees').select('*').eq('id_employee', id).single();
-    if (empData) setEmployee(empData);
-
-    const { data: custData } = await supabase.from('customers').select('*').eq('worker_id', id).order('created_at', { ascending: false });
-    if (custData) setCustomers(custData);
+    // RECUPERAR DATOS DEL LOGIN (Asegúrate de que el login guarde estos nombres)
+    const storedId = localStorage.getItem('worker_code') || "HN121285"; 
+    const storedName = localStorage.getItem('worker_name') || "Henry Neyra Calvo";
     
+    setWorkerId(storedId);
+    setWorkerName(storedName);
+    fetchData(storedId);
+  }, []);
+
+  async function fetchData(id: string) {
+    const { data } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('worker_id', id)
+      .order('registration_date', { ascending: false });
+
+    if (data) setCustomers(data);
     setLoading(false);
   }
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(directLink);
+    if(!promotionLink) return;
+    navigator.clipboard.writeText(promotionLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (loading) return <div className="min-h-screen bg-[#05070a] text-white flex justify-center items-center">Laden...</div>;
-
-  const totalClients = customers.length;
-  const totalCommissions = customers
-    .filter(c => c.commission_status === 'pending' || c.commission_status === 'paid')
-    .reduce((sum, c) => sum + (c.commission_earned || 0), 0);
+  if (loading) return <div className="min-h-screen bg-[#05070a] flex justify-center items-center font-black italic text-white">LADEN...</div>;
 
   return (
     <div className="min-h-screen bg-[#05070a] text-white font-sans">
-      
-      {/* NAVBAR */}
-      <nav className="border-b border-white/5 bg-black/50 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-20 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="bg-[#d4e137] p-2 rounded-lg rotate-3">
-              <LayoutDashboard className="text-black" size={20} />
-            </div>
-            <div>
-              <h1 className="text-xl font-black italic uppercase tracking-tighter leading-none">Mitarbeiter Portal</h1>
-              <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">
-                {employee ? employee.full_name : `ID: ${workerId}`}
-              </p>
-            </div>
+      <nav className="border-b border-white/5 p-6 flex justify-between items-center bg-black/50 backdrop-blur-xl sticky top-0 z-50">
+        <div className="flex items-center gap-3">
+          <div className="bg-[#d4e137] p-2 rounded-lg"><LayoutDashboard className="text-black" size={20}/></div>
+          <div>
+            <h1 className="font-black uppercase italic text-xl tracking-tighter">Mitarbeiter Portal</h1>
+            <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">ID: {workerId} | {workerName}</p>
           </div>
-          <button onClick={() => { localStorage.clear(); router.push('/login'); }} className="text-gray-500 hover:text-white transition-all text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-            <ArrowLeft size={14} /> Abmelden
-          </button>
         </div>
+        <button onClick={() => { localStorage.clear(); router.push('/login'); }} className="text-gray-500 hover:text-white transition-all"><LogOut size={20}/></button>
       </nav>
 
       <main className="max-w-6xl mx-auto p-6 md:p-10 grid grid-cols-1 md:grid-cols-3 gap-8">
-        
-        {/* COLUMNA IZQUIERDA: QR Y LINK */}
-        <div className="md:col-span-1 space-y-6">
-          <div className="flex flex-col items-center bg-white/5 p-8 rounded-3xl border border-white/10 shadow-2xl">
-            <h3 className="text-[#d4e137] font-black uppercase tracking-widest mb-6">Dein Promo-QR</h3>
-            
-            <div className="p-4 bg-white rounded-2xl shadow-[0_0_30px_rgba(212,225,55,0.15)]">
-              <QRCodeSVG value={qrLink} size={180} level="H" />
+        <div className="space-y-6">
+          <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/10 flex flex-col items-center shadow-2xl">
+            <h3 className="text-[#d4e137] font-black uppercase mb-8 tracking-widest text-xs italic">Dein Promo-QR</h3>
+            <div className="p-5 bg-white rounded-[2rem] shadow-[0_0_50px_rgba(212,225,55,0.15)] relative">
+              <QRCodeSVG 
+                value={promotionLink + "&source=qr"} 
+                size={220}
+                level="H"
+                imageSettings={{
+                  src: "/logo-qr.png", // Asegúrate de subir un logo pequeño a public/logo-qr.png
+                  height: 45, width: 45, excavate: true,
+                }}
+              />
             </div>
-            <p className="mt-4 text-xs font-bold text-gray-400 tracking-widest uppercase">ID: {workerId}</p>
+            <p className="mt-6 text-[10px] font-black text-gray-500 uppercase tracking-widest">ID: {workerId}</p>
             
-            <div className="mt-8 w-full">
-              <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-2 font-bold text-center">
-                Direktlink zum Kopieren
-              </p>
-              <div className="flex items-center bg-black border border-white/10 rounded-xl p-1.5 focus-within:border-[#d4e137] transition-colors">
-                <input type="text" readOnly value={directLink} className="bg-transparent text-[11px] text-gray-300 w-full outline-none px-3" />
-                <button onClick={handleCopy} className="ml-2 p-3 bg-[#d4e137] text-black rounded-lg hover:bg-yellow-400 transition-all">
-                  {copied ? <Check size={16} className="text-green-800" /> : <Copy size={16} />}
-                </button>
-              </div>
+            <div className="mt-10 w-full">
+               <p className="text-[9px] text-gray-600 uppercase font-bold tracking-widest text-center mb-2">Direktlink zum Kopieren</p>
+               <div className="flex bg-black border border-white/10 rounded-2xl p-2 items-center focus-within:border-[#d4e137] transition-all">
+                  <input readOnly value={promotionLink} className="bg-transparent text-[10px] w-full px-3 outline-none text-gray-400 font-mono" />
+                  <button onClick={handleCopy} className="p-3 bg-[#d4e137] text-black rounded-xl hover:scale-105 transition-all">
+                    {copied ? <Check size={18}/> : <Copy size={18}/>}
+                  </button>
+               </div>
             </div>
           </div>
 
-          <div className="bg-white/5 border border-white/10 p-6 rounded-3xl">
-            <DollarSign className="text-[#d4e137] mb-3" size={24} />
+          <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem]">
+            <DollarSign className="text-[#d4e137] mb-4" size={30} />
             <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest">Meine Provisionen</p>
-            <h2 className="text-3xl font-black mt-1">{totalCommissions.toFixed(2)} €</h2>
+            <h2 className="text-4xl font-black mt-1 italic">
+              {customers.reduce((acc, c) => acc + (c.commission_earned || 0), 0).toFixed(2)} €
+            </h2>
           </div>
         </div>
 
-        {/* COLUMNA DERECHA: CLIENTES */}
         <div className="md:col-span-2">
-          <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 min-h-full">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-xl font-black uppercase italic tracking-tight">Meine Kunden</h3>
-              <div className="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-full border border-white/5">
-                <Users size={14} className="text-gray-400" />
-                <span className="text-xs font-bold text-gray-300">{totalClients} Registriert</span>
-              </div>
+          <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 md:p-10">
+            <div className="flex justify-between items-center mb-10">
+               <h3 className="text-2xl font-black italic uppercase tracking-tight">Meine Kunden</h3>
+               <div className="bg-black/40 px-4 py-2 rounded-full border border-white/5 flex items-center gap-2">
+                  <Users size={14} className="text-gray-500"/><span className="text-xs font-bold">{customers.length}</span>
+               </div>
             </div>
 
-            {customers.length === 0 ? (
-              <div className="text-center py-20 bg-black/20 rounded-3xl border border-dashed border-white/10">
-                <p className="text-gray-500 font-bold uppercase tracking-widest">Noch keine Kunden geworben</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {customers.map((customer) => {
-                  const isSuccess = customer.commission_status === 'paid' || customer.status === 'purchased';
+            <div className="space-y-4">
+              {customers.length === 0 ? (
+                <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-3xl text-gray-600 font-bold uppercase tracking-widest">Noch keine Kunden geworben</div>
+              ) : (
+                customers.map((c) => {
+                  const isPurchased = c.status === 'purchased' || c.commission_status === 'paid';
                   return (
-                    <div key={customer.id} className={`p-5 rounded-2xl border transition-all flex items-center justify-between ${isSuccess ? 'bg-[#d4e137]/10 border-[#d4e137]/30' : 'bg-black/40 border-white/5'}`}>
+                    <div key={c.id} className={`p-6 rounded-3xl border transition-all flex justify-between items-center ${isPurchased ? 'bg-[#d4e137]/10 border-[#d4e137]/40 shadow-[0_0_20px_rgba(212,225,55,0.05)]' : 'bg-black/40 border-white/5 hover:bg-white/5'}`}>
                       <div>
-                        <p className={`font-bold ${isSuccess ? 'text-[#d4e137]' : 'text-white'}`}>{customer.first_name} {customer.last_name}</p>
-                        <p className="text-[11px] text-gray-500 mt-1">{customer.email}</p>
+                        <p className={`font-black text-lg tracking-tight ${isPurchased ? 'text-[#d4e137]' : 'text-white'}`}>{c.full_name}</p>
+                        <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mt-1">{c.email} | {c.phone}</p>
                       </div>
-                      <div className="text-right flex flex-col items-end">
-                        {isSuccess ? (
-                          <div className="flex items-center gap-1.5 text-[#d4e137] bg-[#d4e137]/10 px-3 py-1 rounded-full border border-[#d4e137]/20">
-                            <CheckCircle2 size={12} />
-                            <span className="text-[9px] font-black uppercase tracking-widest">Kauf bestätigt</span>
+                      <div className="text-right">
+                        {isPurchased ? (
+                          <div className="flex items-center gap-2 text-[#d4e137] bg-[#d4e137]/10 px-4 py-2 rounded-full border border-[#d4e137]/20">
+                            <CheckCircle2 size={14}/> <span className="text-[10px] font-black uppercase tracking-widest">Kauf bestätigt</span>
                           </div>
                         ) : (
-                          <span className="text-gray-400 text-[9px] font-bold uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full">In Bearbeitung</span>
+                          <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest bg-white/5 px-4 py-2 rounded-full">In Bearbeitung</span>
                         )}
-                        <span className="text-xs font-mono text-gray-500 mt-2">{new Date(customer.created_at).toLocaleDateString('de-DE')}</span>
+                        <p className="text-[10px] text-gray-600 font-mono mt-3 uppercase tracking-tighter">Registriert: {new Date(c.registration_date).toLocaleDateString('de-DE')}</p>
                       </div>
                     </div>
                   )
-                })}
-              </div>
-            )}
+                })
+              )}
+            </div>
           </div>
         </div>
       </main>
