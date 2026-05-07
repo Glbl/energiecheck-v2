@@ -5,6 +5,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Wallet, Users, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!

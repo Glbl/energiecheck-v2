@@ -1,176 +1,211 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { 
-  User, Phone, Mail, CheckCircle, 
-  ArrowLeft, Gift, Sparkles, AlertCircle 
-} from 'lucide-react';
-import Link from 'next/link';
+import { QRCodeSVG } from 'qrcode.react';
+import { Copy, Check, Users, DollarSign, LayoutDashboard, CheckCircle2 } from 'lucide-react';
 
-// 1. Inicialización de Supabase con variables de entorno
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export default function BusinessPage() {
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [isSaved, setIsSaved] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  
-  // ID por defecto de Jose Alejandro Lorusso (JL040981)
-  const [workerId, setWorkerId] = useState("JL040981");
+export default function EmployeeDashboard() {
+  const [workerId, setWorkerId] = useState("");
+  const [employee, setEmployee] = useState<any>(null);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Capturar el ID del trabajador desde la URL
+  // La URL que el empleado va a compartir para que los clientes vean la promoción
+  const promotionLink = workerId 
+    ? `https://energiecheck-v2-git-main-gb128128-6735s-projects.vercel.app/promotion?code=${workerId}`
+    : "";
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
+
     if (code) {
-      setWorkerId(code.trim().toUpperCase());
+      const cleanCode = code.trim().toUpperCase();
+      setWorkerId(cleanCode);
+      fetchDashboardData(cleanCode);
+    } else {
+      setLoading(false);
     }
   }, []);
 
-  // Función para procesar la comisión automática (10%)
-  const handlePurchase = async (customerId: string, amount: number) => {
-    const commission = amount * 0.10;
-    await supabase
+  async function fetchDashboardData(id: string) {
+    // 1. Obtener datos del empleado
+    const { data: empData } = await supabase
+      .from('employees')
+      .select('*')
+      .eq('id_employee', id)
+      .single();
+
+    if (empData) setEmployee(empData);
+
+    // 2. Obtener la lista de clientes referidos por este empleado
+    const { data: custData } = await supabase
       .from('customers')
-      .update({ 
-        status: 'purchased',
-        purchase_amount: amount,
-        commission_earned: commission,
-        commission_status: 'pending'
-      })
-      .eq('id', customerId);
+      .select('*')
+      .eq('worker_id', id)
+      .order('created_at', { ascending: false });
+
+    if (custData) setCustomers(custData);
+    setLoading(false);
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(promotionLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
-  // Función principal de registro con manejo de Foreign Keys
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage('');
+  if (loading) return <div className="min-h-screen bg-[#05070a] text-white flex justify-center items-center">Laden...</div>;
+  
+  if (!workerId) return (
+    <div className="min-h-screen bg-[#05070a] text-white flex flex-col justify-center items-center">
+      <h2 className="text-2xl font-black text-orange-500 mb-2">Zugriff verweigert</h2>
+      <p className="text-gray-400">Bitte verwenden Sie Ihren persönlichen Mitarbeiter-Link.</p>
+    </div>
+  );
 
-    // Limpieza estricta del ID para evitar conflictos (Error 409)
-    const cleanWorkerId = workerId.trim().toUpperCase();
-
-    const { data, error } = await supabase.from('customers').insert([
-      {
-        full_name: fullName,
-        phone: phone,
-        email: email,
-        worker_id: cleanWorkerId,
-        status: 'registered'
-      }
-    ]).select();
-
-    if (error) {
-      console.error("Error detallado de Supabase:", error);
-      
-      // Error 23503: Violación de Foreign Key (El ID no existe en employees)
-      if (error.code === '23503') {
-        setErrorMessage(`Der Mitarbeiter-Code "${cleanWorkerId}" ist ungültig.`);
-      } else {
-        setErrorMessage("Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.");
-      }
-      return;
-    }
-
-    if (data) {
-      setIsSaved(true);
-      await handlePurchase(data[0].id, 1000);
-    }
-  };
+  // Cálculos de comisiones para el empleado
+  const totalClients = customers.length;
+  const totalCommissions = customers
+    .filter(c => c.commission_status === 'pending' || c.commission_status === 'paid')
+    .reduce((sum, c) => sum + (c.commission_earned || 0), 0);
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center justify-center">
+    <div className="min-h-screen bg-[#05070a] text-white font-sans">
       
-      <div className="absolute top-6 left-6">
-        <Link href="/login" className="flex items-center gap-2 text-gray-500 hover:text-white transition-all text-xs uppercase font-bold">
-          <ArrowLeft size={16} /> Portal
-        </Link>
-      </div>
+      {/* NAVBAR */}
+      <nav className="border-b border-white/5 bg-black/50 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-5xl mx-auto px-6 h-20 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="bg-[#d4e137] p-2 rounded-lg rotate-3">
+              <LayoutDashboard className="text-black" size={20} />
+            </div>
+            <div>
+              <h1 className="text-xl font-black italic uppercase tracking-tighter leading-none">Mitarbeiter Portal</h1>
+              <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">
+                {employee ? employee.full_name : `ID: ${workerId}`}
+              </p>
+            </div>
+          </div>
+        </div>
+      </nav>
 
-      <main className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-orange-500 font-black italic text-3xl uppercase tracking-tighter">Energiecheck-24</h1>
+      <main className="max-w-5xl mx-auto p-6 md:p-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        {/* COLUMNA IZQUIERDA: HERRAMIENTAS DE VENTA (QR y Link) */}
+        <div className="md:col-span-1 space-y-6">
+          <div className="flex flex-col items-center bg-white/5 p-8 rounded-3xl border border-white/10 shadow-2xl">
+            <h3 className="text-[#d4e137] font-black uppercase tracking-widest mb-6">Dein Promo-QR</h3>
+            
+            {/* El Código QR */}
+            <div className="p-4 bg-white rounded-2xl shadow-[0_0_30px_rgba(212,225,55,0.15)]">
+              <QRCodeSVG value={promotionLink} size={180} level="H" />
+            </div>
+            <p className="mt-4 text-xs font-bold text-gray-400 tracking-widest uppercase">ID: {workerId}</p>
+            
+            {/* El enlace directo que pide Jose */}
+            <div className="mt-8 w-full">
+              <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-2 font-bold text-center">
+                Direktlink zum Kopieren
+              </p>
+              <div className="flex items-center bg-black border border-white/10 rounded-xl p-1.5 focus-within:border-[#d4e137] transition-colors">
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={promotionLink} 
+                  className="bg-transparent text-[11px] text-gray-300 w-full outline-none px-3"
+                />
+                <button 
+                  onClick={handleCopy} 
+                  className="ml-2 p-3 bg-[#d4e137] text-black rounded-lg hover:bg-yellow-400 transition-all flex-shrink-0"
+                  title="Link kopieren"
+                >
+                  {copied ? <Check size={16} className="text-green-800" /> : <Copy size={16} />}
+                </button>
+              </div>
+              {copied && (
+                <p className="text-[10px] text-[#d4e137] text-center mt-3 animate-in fade-in font-bold uppercase tracking-widest">
+                  Link kopiert!
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Tarjetas de Resumen Rápido */}
+          <div className="bg-white/5 border border-white/10 p-6 rounded-3xl">
+            <DollarSign className="text-[#d4e137] mb-3" size={24} />
+            <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest">Meine Provisionen</p>
+            <h2 className="text-3xl font-black mt-1">{totalCommissions.toFixed(2)} €</h2>
+          </div>
         </div>
 
-        {isSaved ? (
-          <div className="text-center p-12 bg-white/5 border border-[#d4e137]/30 rounded-[3rem] animate-in fade-in zoom-in duration-500 shadow-[0_0_50px_rgba(212,225,55,0.1)]">
-            <CheckCircle className="text-[#d4e137] mx-auto mb-4" size={64} />
-            <h2 className="text-2xl font-black uppercase italic">Vielen Dank!</h2>
-            <p className="text-gray-400 text-sm mt-4 leading-relaxed">
-              Deine Daten und el <span className="text-[#d4e137] font-bold">50€ Gutschein</span> wurden registriert.
-            </p>
-          </div>
-        ) : (
-          <div className="relative">
-            {/* Tag Visual del Bono de 50€ */}
-            <div className="absolute -top-4 -right-4 bg-[#d4e137] text-black text-[10px] font-black px-4 py-2 rounded-full rotate-12 shadow-xl z-10 flex items-center gap-2 animate-bounce">
-              <Gift size={14} /> 50€ BONUS ACTIVATED
-            </div>
-
-            <div className="bg-white/5 border border-white/10 p-8 rounded-[3rem] backdrop-blur-3xl shadow-2xl overflow-hidden relative">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-[#d4e137] to-orange-500 opacity-50" />
-              
-              <div className="flex items-center gap-3 mb-8">
-                <div className="bg-white/10 p-2 rounded-xl">
-                  <Sparkles className="text-[#d4e137]" size={20} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black uppercase italic leading-none">Deine Anmeldung</h3>
-                  <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-1">Ref-ID: {workerId}</p>
-                </div>
+        {/* COLUMNA DERECHA: LISTA DE CLIENTES */}
+        <div className="md:col-span-2">
+          <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 min-h-full">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-xl font-black uppercase italic tracking-tight">Meine Kunden</h3>
+              <div className="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-full border border-white/5">
+                <Users size={14} className="text-gray-400" />
+                <span className="text-xs font-bold text-gray-300">{totalClients} Registriert</span>
               </div>
-
-              {errorMessage && (
-                <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-2xl flex items-center gap-3 text-red-500 text-xs font-bold uppercase italic animate-shake">
-                  <AlertCircle size={18} />
-                  {errorMessage}
-                </div>
-              )}
-              
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                  <input 
-                    type="text" placeholder="Vollständiger Name" required
-                    className="w-full bg-black/50 border border-white/10 p-4 pl-12 rounded-2xl outline-none focus:border-[#d4e137] transition-all text-white text-sm"
-                    onChange={(e) => setFullName(e.target.value)}
-                  />
-                </div>
-
-                <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                  <input 
-                    type="tel" placeholder="Telefonnummer" required
-                    className="w-full bg-black/50 border border-white/10 p-4 pl-12 rounded-2xl outline-none focus:border-[#d4e137] transition-all text-white text-sm"
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                </div>
-
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                  <input 
-                    type="email" placeholder="E-Mail Adresse" required
-                    className="w-full bg-black/50 border border-white/10 p-4 pl-12 rounded-2xl outline-none focus:border-[#d4e137] transition-all text-white text-sm"
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-
-                <div className="pt-4">
-                  <button className="w-full py-5 bg-[#d4e137] text-black font-black rounded-2xl uppercase hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-[#d4e137]/20">
-                    BONUS SICHERN
-                  </button>
-                  <p className="text-[8px] text-gray-600 text-center mt-6 uppercase tracking-[0.2em] font-bold">
-                    *Gutschein gültig nach erfolgreicher Erstberatung
-                  </p>
-                </div>
-              </form>
             </div>
+
+            {customers.length === 0 ? (
+              <div className="text-center py-20 bg-black/20 rounded-3xl border border-dashed border-white/10">
+                <p className="text-gray-500 font-bold uppercase tracking-widest">Noch keine Kunden geworben</p>
+                <p className="text-xs text-gray-600 mt-2">Teilen Sie Ihren QR-Code, um zu starten.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {customers.map((customer) => {
+                  // LÓGICA DE COLOR VERDE: Si ya compró o se le pagó la comisión
+                  const isSuccess = customer.commission_status === 'paid' || customer.status === 'purchased';
+
+                  return (
+                    <div 
+                      key={customer.id} 
+                      className={`p-5 rounded-2xl border transition-all flex items-center justify-between ${
+                        isSuccess 
+                          ? 'bg-[#d4e137]/10 border-[#d4e137]/30 shadow-[0_0_20px_rgba(212,225,55,0.05)]' 
+                          : 'bg-black/40 border-white/5 hover:bg-white/5'
+                      }`}
+                    >
+                      <div>
+                        <p className={`font-bold ${isSuccess ? 'text-[#d4e137]' : 'text-white'}`}>
+                          {customer.first_name} {customer.last_name}
+                        </p>
+                        <p className="text-[11px] text-gray-500 mt-1">{customer.email}</p>
+                      </div>
+                      
+                      <div className="text-right flex flex-col items-end">
+                        {isSuccess ? (
+                          <div className="flex items-center gap-1.5 text-[#d4e137] bg-[#d4e137]/10 px-3 py-1 rounded-full border border-[#d4e137]/20">
+                            <CheckCircle2 size={12} />
+                            <span className="text-[9px] font-black uppercase tracking-widest">Kauf bestätigt</span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-[9px] font-bold uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full">
+                            In Bearbeitung
+                          </span>
+                        )}
+                        <span className="text-xs font-mono text-gray-500 mt-2">
+                          {new Date(customer.created_at).toLocaleDateString('de-DE')}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
-        )}
+        </div>
+
       </main>
     </div>
   );

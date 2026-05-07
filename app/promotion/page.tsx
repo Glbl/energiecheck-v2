@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { ChevronRight, Gift, CheckCircle2 } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
 import Link from 'next/link';
 
 const supabase = createClient(
@@ -14,10 +13,8 @@ export default function PromotionPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [workerId, setWorkerId] = useState("JL040981");
   const [sessionId] = useState(`sess_${Math.random().toString(36).substr(2, 9)}`);
-  const [baseUrl, setBaseUrl] = useState("");
 
   useEffect(() => {
-    setBaseUrl(window.location.origin + window.location.pathname);
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
     // Detectamos si la URL indica que viene de un escaneo (ej: ?qr=true o ?=qrcode)
@@ -84,7 +81,7 @@ export default function PromotionPage() {
 
       <div className="relative z-10 flex flex-col items-center text-center max-w-xl mx-auto px-4">
         
-        {/* PASO 1: LANDING PROMOCIONAL */}
+        {/* PASO 1: LANDING PROMOCIONAL (LIMPIA, SIN QR) */}
         {currentStep === 1 && (
           <div className="animate-in fade-in duration-1000 w-full pb-20">
             
@@ -115,7 +112,7 @@ export default function PromotionPage() {
               <h1 className="text-4xl md:text-5xl font-black uppercase italic tracking-tighter">sichern</h1>
             </div>
 
-            {/* SECCIÓN DE BANDERAS Y BONUS (FIEL A LA IMAGEN) */}
+            {/* SECCIÓN DE BANDERAS Y BONUS */}
             <div className="flex items-center justify-center gap-6 md:gap-12 w-full mt-8">
               <img 
                 src="/germany-flag3.png" 
@@ -136,7 +133,7 @@ export default function PromotionPage() {
               />
             </div>
 
-            {/* BOTÓN Y QR */}
+            {/* BOTÓN PRINCIPAL (El QR ha sido removido de aquí) */}
             <div className="w-full max-w-xs mt-10 mx-auto">
               <button 
                 onClick={() => handleNextStep(2, "SOLAR VORTEILE")}
@@ -144,19 +141,6 @@ export default function PromotionPage() {
               >
                 Jetzt Tarif prüfen
               </button>
-
-              <div className="mt-12 flex flex-col items-center">
-                <div className="p-3 bg-white rounded-2xl shadow-2xl">
-                  <QRCodeSVG 
-                    value={`${baseUrl}?code=${workerId}&qr=true`} 
-                    size={110}
-                    level={"H"}
-                  />
-                </div>
-                <p className="text-[9px] mt-4 uppercase font-black text-gray-500 tracking-widest">
-                  Personal QR ID: {workerId}
-                </p>
-              </div>
             </div>
           </div>
         )}
@@ -182,7 +166,7 @@ export default function PromotionPage() {
             <div className="bg-[#d4e137] p-10 rounded-[3rem] text-black shadow-2xl">
               <Gift className="mx-auto mb-4" size={50} />
               <h2 className="text-3xl font-black uppercase italic leading-tight uppercase tracking-tighter">FAST FERTIG!</h2>
-              <p className="font-bold text-sm mt-4 uppercase italic">Sichern Sie sich jetzt sus 50€ Bonus.</p>
+              <p className="font-bold text-sm mt-4 uppercase italic">Sichern Sie sich jetzt Ihren 50€ Bonus.</p>
             </div>
             
             <div className="mt-12">
