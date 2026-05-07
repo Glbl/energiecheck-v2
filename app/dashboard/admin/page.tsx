@@ -1,85 +1,116 @@
 "use client";
-import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase'; // Ajusta la ruta si es necesario
+import React, { useState } from 'react';
+import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
-import { Copy, CheckCircle2, Users, Wallet, QrCode as QrIcon, LogOut, LayoutDashboard } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import { LayoutDashboard, Lock, User } from 'lucide-react';
 
-export default function EmployeeDashboard() {
-  const [employee, setEmployee] = useState<any>(null);
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [stats, setStats] = useState({ sales: 0, comm: 0 });
-  const [copied, setCopied] = useState(false);
-  const [loading, setLoading] = useState(true);
+export default function LoginPage() {
+  const [userInput, setUserInput] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const workerId = localStorage.getItem('worker_id');
-    const userRole = localStorage.getItem('user_role');
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
 
-    // IMPORTANTE: Permitir el rol 'worker'
-    if (!workerId || userRole !== 'worker') {
-      router.push('/login');
-      return;
-    }
+    try {
+      const cleanUser = String(userInput).trim();
+      const cleanPass = String(password).trim();
 
-    async function loadData() {
-      const { data: emp } = await supabase.from('employees').select('*').eq('id_employee', workerId).single();
-      if (emp) setEmployee(emp);
+      // 1. Buscamos directamente en la tabla 'employees' que ya confirmamos que tiene a todos
+      const { data: user, error } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('username', cleanUser)
+        .eq('password', cleanPass)
+        .maybeSingle();
 
-      const { data: custs } = await supabase.from('customers').select('*').eq('worker_id', workerId);
-      if (custs) {
-        setCustomers(custs);
-        const totalComm = custs.reduce((acc: number, c: any) => acc + (Number(c.commission_earned) || 0), 0);
-        setStats({ sales: custs.length, comm: totalComm });
+      if (error) {
+        console.error("Error de Supabase:", error);
+        alert("Error de conexión con la base de datos.");
+        return;
       }
+
+      if (!user) {
+        alert("Usuario o contraseña incorrectos.");
+        return;
+      }
+
+      // 2. Guardamos la sesión en el navegador
+      localStorage.setItem('user_role', user.role); // 'admin' o 'worker'
+      localStorage.setItem('worker_id', user.id_employee); // Ej: 'JL040981' para José o 'NG021284' para Norma
+      localStorage.setItem('full_name', user.full_name);
+
+      // 3. Redirección inteligente según el rol de tu tabla
+      if (user.role === 'admin') {
+        // Si es José (admin000), va al panel de control total
+        router.push('/dashboard/admin');
+      } else if (user.role === 'worker') {
+        // Si es Norma, Henry, etc., van a su portal de ventas
+        router.push('/dashboard/worker');
+      } else {
+        alert("Rol no reconocido: " + user.role);
+      }
+
+    } catch (err) {
+      console.error("Error crítico:", err);
+      alert("Ocurrió un error inesperado.");
+    } finally {
       setLoading(false);
     }
-    loadData();
-  }, [router]);
-
-  const promoLink = employee ? `https://energiecheck-v2.vercel.app/promotion?code=${employee.id_employee}` : "";
-
-  if (loading) return <div className="min-h-screen bg-[#05070a] text-white flex items-center justify-center font-black italic">LADEN...</div>;
+  };
 
   return (
-    <div className="min-h-screen bg-[#05070a] text-white font-sans text-left">
-      <nav className="border-b border-white/5 bg-black/50 h-20 flex items-center justify-between px-10">
-        <div className="flex items-center gap-3">
-          <div className="bg-[#d4e137] p-2 rounded-lg"><LayoutDashboard className="text-black" size={20} /></div>
-          <h1 className="text-xl font-black italic uppercase italic">Mitarbeiter Portal</h1>
-        </div>
-        <button onClick={() => { localStorage.clear(); router.push('/login'); }} className="text-gray-500 hover:text-white flex items-center gap-2 text-xs font-bold uppercase italic">
-          <LogOut size={14} /> Abmelden
-        </button>
-      </nav>
-
-      <main className="max-w-7xl mx-auto p-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] flex flex-col items-center">
-          <h3 className="text-[#d4e137] font-black uppercase text-xs mb-6 italic">Dein QR-Code</h3>
-          <div className="p-4 bg-white rounded-[2rem]">
-            <QRCodeSVG value={promoLink} size={150} />
+    <div className="min-h-screen bg-[#05070a] flex items-center justify-center p-6">
+      <div className="w-full max-w-md bg-white/5 border border-white/10 p-10 rounded-[2.5rem] backdrop-blur-xl shadow-2xl">
+        <div className="flex flex-col items-center mb-10 text-center">
+          <div className="bg-orange-600 p-3 rounded-2xl rotate-3 mb-4 shadow-lg shadow-orange-600/20">
+            <LayoutDashboard className="text-black" size={28} />
           </div>
-          <div className="mt-6 w-full bg-black/50 p-3 rounded-xl border border-white/5 flex justify-between">
-             <span className="text-[10px] text-gray-500 truncate mr-2">{promoLink}</span>
-             <button onClick={() => { navigator.clipboard.writeText(promoLink); setCopied(true); setTimeout(() => setCopied(false), 2000); }}>
-               {copied ? <CheckCircle2 size={16} className="text-[#d4e137]" /> : <Copy size={16} className="text-gray-400" />}
-             </button>
+          <h1 className="text-2xl font-black italic uppercase tracking-tighter text-white leading-none">EnergieCheck</h1>
+          <p className="text-[#d4e137] text-[10px] font-bold uppercase tracking-[0.2em] mt-2 italic">Portal-Zugang</p>
+        </div>
+
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div>
+            <div className="relative">
+              <User className="absolute left-4 top-4 text-gray-500" size={18} />
+              <input
+                type="text"
+                placeholder="Benutzername"
+                className="w-full bg-black/50 border border-white/10 rounded-2xl p-4 pl-12 text-white outline-none focus:border-[#d4e137] transition-all"
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                required
+              />
+            </div>
           </div>
-        </div>
 
-        <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem]">
-          <Users className="text-blue-400 mb-4" size={24} />
-          <p className="text-gray-500 text-[10px] font-bold uppercase">Kunden</p>
-          <h2 className="text-4xl font-black italic">{customers.length}</h2>
-        </div>
+          <div>
+            <div className="relative">
+              <Lock className="absolute left-4 top-4 text-gray-500" size={18} />
+              <input
+                type="password"
+                placeholder="Passwort"
+                autoComplete="current-password"
+                className="w-full bg-black/50 border border-white/10 rounded-2xl p-4 pl-12 text-white outline-none focus:border-[#d4e137] transition-all"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+          </div>
 
-        <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem]">
-          <Wallet className="text-[#d4e137] mb-4" size={24} />
-          <p className="text-gray-500 text-[10px] font-bold uppercase">Provisionen</p>
-          <h2 className="text-4xl font-black italic">{stats.comm} €</h2>
-        </div>
-      </main>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-[#d4e137] text-black font-black uppercase italic p-4 rounded-2xl hover:scale-[1.02] transition-all disabled:opacity-50 shadow-xl shadow-[#d4e137]/10"
+          >
+            {loading ? 'PRÜFUNG...' : 'ANMELDEN'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
