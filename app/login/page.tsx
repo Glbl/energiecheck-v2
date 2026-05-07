@@ -21,7 +21,7 @@ export default function LoginPage() {
 
       // Buscamos en la columna 'username' forzando el valor como string
       const { data: user, error } = await supabase
-        .from('employee')
+        .from('employees')
         .select('*')
         .eq('username', cleanUser)
         .eq('password', cleanPass)
