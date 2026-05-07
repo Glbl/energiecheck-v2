@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { LayoutDashboard, Lock, User } from 'lucide-react';
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
+  const [userInput, setUserInput] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -15,86 +15,95 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-    // 1. Forzamos que los valores sean tratados como strings y limpiamos espacios
-    const identifier = String(username).trim();
-    const pass = String(password).trim();
+      const cleanUser = String(userInput).trim();
+      const cleanPass = String(password).trim();
 
-    // 2. Realizamos la consulta
-    const { data: user, error, status } = await supabase
-      .from('employees')
-      .select('*')
-      .eq('id_employee', identifier)
-      .eq('password', pass)
-      .maybeSingle(); // Usamos maybeSingle para evitar errores si no encuentra nada
+      // Buscamos en 'username' y validamos 'password'
+      const { data: user, error } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('username', cleanUser)
+        .eq('password', cleanPass)
+        .maybeSingle();
 
-    if (error) {
-      console.error("Error de Supabase:", error.message);
-      alert(`Error de conexión: ${error.message}`);
-      return;
+      if (error) {
+        alert("Error de conexión: " + error.message);
+        return;
+      }
+
+      if (!user) {
+        alert("Usuario o contraseña incorrectos.");
+        return;
+      }
+
+      // GUARDAR DATOS CLAVE
+      // worker_id guardará el código (ej: JL260190) para el tracking
+      localStorage.setItem('worker_id', user.id_employee); 
+      localStorage.setItem('user_role', user.role); // Aquí guardará 'worker' o 'admin'
+
+      // REDIRECCIÓN SEGÚN TU TABLA
+      if (user.role === 'admin') {
+        router.push('/dashboard/admin');
+      } else if (user.role === 'worker') {
+        // Redirigimos a la carpeta que creamos para los trabajadores
+        router.push('/dashboard/employee');
+      } else {
+        alert("Rol no reconocido: " + user.role);
+      }
+
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-
-    if (!user) {
-      alert("ID de usuario o contraseña incorrectos.");
-      return;
-    }
-
-    // 3. Si llegamos aquí, el login es exitoso
-    localStorage.setItem('worker_id', user.id_employee);
-    localStorage.setItem('user_role', user.role);
-
-    if (user.role === 'admin') {
-      router.push('/dashboard/admin');
-    } else {
-      router.push('/dashboard/employee');
-    }
-
-  } catch (err) {
-    console.error("Error inesperado:", err);
-    alert("Ocurrió un error inesperado en el sistema.");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
-    <div className="min-h-screen bg-[#05070a] flex items-center justify-center p-6">
-      <div className="w-full max-w-md bg-white/5 border border-white/10 p-10 rounded-[2.5rem] backdrop-blur-xl shadow-2xl">
-        <div className="flex flex-col items-center mb-10">
-          <div className="bg-orange-600 p-3 rounded-2xl rotate-3 mb-4 shadow-[0_0_20px_rgba(234,88,12,0.3)]">
+    <div className="min-h-screen bg-[#05070a] flex items-center justify-center p-6 text-left">
+      <div className="w-full max-w-md bg-white/5 border border-white/10 p-10 rounded-[2.5rem] backdrop-blur-xl">
+        <div className="flex flex-col items-center mb-10 text-center">
+          <div className="bg-orange-600 p-3 rounded-2xl rotate-3 mb-4 shadow-lg shadow-orange-600/20">
             <LayoutDashboard className="text-black" size={28} />
           </div>
-          <h1 className="text-2xl font-black italic uppercase tracking-tighter text-white">EnergieCheck Login</h1>
+          <h1 className="text-2xl font-black italic uppercase tracking-tighter text-white leading-none">EnergieCheck</h1>
+          <p className="text-[#d4e137] text-[10px] font-bold uppercase tracking-[0.2em] mt-2">Mitarbeiter-Zugang</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-5">
-          <div className="relative">
-            <User className="absolute left-4 top-4 text-gray-500" size={18} />
-            <input
-              type="text"
-              placeholder="Mitarbeiter ID (ej: user003)"
-              className="w-full bg-black/50 border border-white/10 rounded-2xl p-4 pl-12 text-white outline-none focus:border-[#d4e137] transition-all"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div>
+            <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest ml-4 mb-2 block">Benutzername (user003)</label>
+            <div className="relative">
+              <User className="absolute left-4 top-4 text-gray-500" size={18} />
+              <input
+                type="text"
+                className="w-full bg-black/50 border border-white/10 rounded-2xl p-4 pl-12 text-white outline-none focus:border-[#d4e137] transition-all"
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                required
+              />
+            </div>
           </div>
-          <div className="relative">
-            <Lock className="absolute left-4 top-4 text-gray-500" size={18} />
-            <input
-              type="password"
-              placeholder="Passwort"
-              className="w-full bg-black/50 border border-white/10 rounded-2xl p-4 pl-12 text-white outline-none focus:border-[#d4e137] transition-all"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+
+          <div>
+            <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest ml-4 mb-2 block">Passwort</label>
+            <div className="relative">
+              <Lock className="absolute left-4 top-4 text-gray-500" size={18} />
+              <input
+                type="password"
+                className="w-full bg-black/50 border border-white/10 rounded-2xl p-4 pl-12 text-white outline-none focus:border-[#d4e137] transition-all"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
           </div>
+
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#d4e137] text-black font-black uppercase italic p-4 rounded-2xl hover:bg-[#e4f147] transition-all disabled:opacity-50 shadow-lg"
+            className="w-full bg-[#d4e137] text-black font-black uppercase italic p-5 rounded-2xl hover:scale-[1.02] transition-all disabled:opacity-50 shadow-xl shadow-[#d4e137]/10"
           >
-            {loading ? 'PRÜFUNG...' : 'EINLOGGEN'}
+            {loading ? 'PRÜFUNG...' : 'ANMELDEN'}
           </button>
         </form>
       </div>

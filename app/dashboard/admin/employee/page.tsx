@@ -26,11 +26,11 @@ export default function EmployeeDashboard() {
     const workerId = localStorage.getItem('worker_id');
     const userRole = localStorage.getItem('user_role');
 
-    // Seguridad: Si no hay ID o el rol no es employee, al login
-    if (!workerId || userRole !== 'employee') {
-      router.push('/login');
-      return;
-    }
+   // CAMBIO AQUÍ: Ahora validamos contra 'worker'
+  if (!workerId || userRole !== 'worker') {
+    router.push('/login');
+    return;
+  }
 
     async function loadDashboardData() {
       setLoading(true);
