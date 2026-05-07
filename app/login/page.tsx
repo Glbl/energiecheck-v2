@@ -10,39 +10,35 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+ const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
 
-    try {
-      // Buscamos en la tabla employees por id_employee y password
-      const { data: user, error } = await supabase
-        .from('employees')
-        .select('*')
-        .eq('id_employee', username)
-        .eq('password', password)
-        .single();
+  // Consultamos la tabla employees
+  const { data: user, error } = await supabase
+    .from('employees')
+    .select('*')
+    .eq('id_employee', username) // 'user003'
+    .eq('password', password)    // 'NGS_Energy#2026'
+    .single();
 
-      if (error || !user) {
-        alert("Ungültige Anmeldedaten (Credenciales inválidas)");
-      } else {
-        // GUARDAMOS LOS DATOS CLAVE
-        localStorage.setItem('worker_id', user.id_employee);
-        localStorage.setItem('user_role', user.role); // 'admin' o 'employee'
+  if (user) {
+    // IMPORTANTE: Guardamos estos datos para que el Dashboard de Norma funcione
+    localStorage.setItem('worker_id', user.id_employee); 
+    localStorage.setItem('worker_name', user.full_name);
+    localStorage.setItem('user_role', user.role);
 
-        // Redirección según rol
-        if (user.role === 'admin') {
-          router.push('/dashboard/admin');
-        } else {
-          router.push('/dashboard/employee');
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+    // Redirección según el campo 'role' de tu tabla
+    if (user.role === 'admin') {
+      router.push('/dashboard/admin');
+    } else {
+      router.push('/dashboard/employee');
     }
-  };
+  } else {
+    alert("Anmeldedaten falsch (Datos incorrectos)");
+  }
+  setLoading(false);
+};
 
   return (
     <div className="min-h-screen bg-[#05070a] flex items-center justify-center p-6">
