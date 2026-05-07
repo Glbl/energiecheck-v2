@@ -57,12 +57,12 @@ export default function EmployeeProfile() {
           </div>
           <div className="bg-orange-500/10 border border-orange-500/20 p-8 rounded-[2rem]">
             <Clock className="text-orange-500 mb-4" size={24} />
-            <p className="text-orange-500/70 text-[10px] font-bold uppercase">Offen (Pendiente)</p>
+            <p className="text-orange-500/70 text-[10px] font-bold uppercase">Offen</p>
             <h2 className="text-3xl font-black text-orange-500 mt-1">{pendingComm.toLocaleString('de-DE')} €</h2>
           </div>
           <div className="bg-[#d4e137]/10 border border-[#d4e137]/20 p-8 rounded-[2rem]">
             <CheckCircle2 className="text-[#d4e137] mb-4" size={24} />
-            <p className="text-[#d4e137]/70 text-[10px] font-bold uppercase">Bezahlt (Pagado)</p>
+            <p className="text-[#d4e137]/70 text-[10px] font-bold uppercase">Bezahlt</p>
             <h2 className="text-3xl font-black text-[#d4e137] mt-1">{paidComm.toLocaleString('de-DE')} €</h2>
           </div>
           <div className="bg-white/5 border border-white/10 p-8 rounded-[2rem]">
