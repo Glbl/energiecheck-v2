@@ -17,17 +17,13 @@ export default function PromotionPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
-    // Detectamos si la URL indica que viene de un escaneo (ej: ?qr=true o ?=qrcode)
     const isQr = params.get('qr') === 'true' || window.location.href.includes('qrcode');
 
     if (code) {
       const cleanCode = code.trim().toUpperCase();
       setWorkerId(cleanCode);
       
-      // 1. Registro en leads_tracking (Detección de dispositivo y QR)
       trackLead(cleanCode, isQr);
-      
-      // 2. Registro inicial en el funnel
       trackStep("PROMOTION START", cleanCode);
     }
   }, []);
@@ -81,9 +77,9 @@ export default function PromotionPage() {
 
       <div className="relative z-10 flex flex-col items-center text-center max-w-xl mx-auto px-4">
         
-        {/* PASO 1: LANDING PROMOCIONAL (LIMPIA, SIN QR) */}
+        {/* PASO 1: LANDING PROMOCIONAL */}
         {currentStep === 1 && (
-          <div className="animate-in fade-in duration-1000 w-full pb-20">
+          <div className="animate-in fade-in duration-1000 w-full pb-16">
             
             <div className="pt-10 pb-4">
               <h2 className="text-[#d4e137] text-4xl md:text-5xl font-black italic tracking-tighter uppercase leading-none">
@@ -114,26 +110,16 @@ export default function PromotionPage() {
 
             {/* SECCIÓN DE BANDERAS Y BONUS */}
             <div className="flex items-center justify-center gap-6 md:gap-12 w-full mt-8">
-              <img 
-                src="/germany-flag3.png" 
-                alt="DE Flag" 
-                className="w-12 h-auto animate-bounce duration-[3000ms] drop-shadow-lg" 
-              />
-              
+              <img src="/germany-flag3.png" alt="DE Flag" className="w-12 h-auto animate-bounce duration-[3000ms] drop-shadow-lg" />
               <div className="flex flex-col items-center">
                 <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest leading-none">Zusätzliche Förderung möglich</p>
                 <h3 className="text-lg font-black uppercase italic mt-2 tracking-tight">MÜNCHEN SOLAR BONUS</h3>
                 <p className="text-[#d4e137] text-3xl font-black">+ 320 €</p>
               </div>
-
-              <img 
-                src="/germany-flag3.png" 
-                alt="DE Flag" 
-                className="w-12 h-auto animate-bounce duration-[3000ms] drop-shadow-lg" 
-              />
+              <img src="/germany-flag3.png" alt="DE Flag" className="w-12 h-auto animate-bounce duration-[3000ms] drop-shadow-lg" />
             </div>
 
-            {/* BOTÓN PRINCIPAL (El QR ha sido removido de aquí) */}
+            {/* BOTÓN PRINCIPAL */}
             <div className="w-full max-w-xs mt-10 mx-auto">
               <button 
                 onClick={() => handleNextStep(2, "SOLAR VORTEILE")}
@@ -142,6 +128,21 @@ export default function PromotionPage() {
                 Jetzt Tarif prüfen
               </button>
             </div>
+
+            {/* TEXTOS RECUPERADOS (Stromkosten sparen...) */}
+            <div className="mt-8 text-center space-y-6">
+              <p className="text-sm md:text-base font-medium text-white leading-tight">
+                30–50% Stromkosten sparen mit der <br />
+                <span className="text-[#d4e137]">Eco-Home-E-Station</span>
+              </p>
+              
+              <div className="text-[17px] md:text-[19px] font-black text-white leading-snug tracking-tight">
+                <p>In unter <span className="text-[#d4e137]">5 Minuten</span> starten</p>
+                <p>Bis zu <span className="text-[#d4e137]">820 €</span> verdienen</p>
+                <p>+ bis zu <span className="text-[#d4e137]">800 €</span> jährlich sparen</p>
+              </div>
+            </div>
+
           </div>
         )}
 
