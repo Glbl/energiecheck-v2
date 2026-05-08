@@ -141,9 +141,7 @@ export default function WorkerDashboard() {
                 }}
               />
             </div>
-            <div className="p-4 bg-white rounded-[2rem] shadow-[0_0_50px_rgba(212,225,55,0.15)]">
-              <QRCodeSVG value={promoLink} size={180} level="H" />
-            </div>
+           
 
             <div className="mt-8 w-full">
               <p className="text-[9px] text-gray-600 uppercase font-bold text-center mb-2 tracking-widest italic">Link kopieren</p>
