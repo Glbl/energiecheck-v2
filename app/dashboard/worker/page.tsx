@@ -7,7 +7,6 @@ import {
   CheckCircle2, 
   Users, 
   Wallet, 
-  QrCode as QrIcon, 
   LogOut, 
   LayoutDashboard 
 } from 'lucide-react';
@@ -22,11 +21,9 @@ export default function WorkerDashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    // 1. Obtener datos de la sesión actual
     const workerId = localStorage.getItem('worker_id');
     const userRole = localStorage.getItem('user_role');
 
-    // 2. Verificación de seguridad y rol
     if (!workerId || userRole !== 'worker') {
       router.push('/login');
       return;
@@ -35,68 +32,52 @@ export default function WorkerDashboard() {
     async function loadDashboardData() {
       try {
         setLoading(true);
-        
-        // 3. Traer perfil del trabajador (esto asegura que el nombre sea el de Norma)
-        const { data: empData, error: empError } = await supabase
+        const { data: empData } = await supabase
           .from('employees')
           .select('*')
           .eq('id_employee', workerId)
           .single();
 
-        if (empError || !empData) {
-          console.error("Error al cargar perfil:", empError);
-          return;
-        }
-        setEmployee(empData);
+        if (empData) setEmployee(empData);
 
-        // 4. Traer SOLO los clientes asociados al id_employee de Norma
-        const { data: custData, error: custError } = await supabase
+        const { data: custData } = await supabase
           .from('customers')
           .select('*')
           .eq('worker_id', workerId)
           .order('registration_date', { ascending: false });
 
-        if (custError) {
-          console.error("Error al cargar clientes:", custError);
-        } else if (custData) {
+        if (custData) {
           setCustomers(custData);
-          
-          // 5. Calcular estadísticas solo para este usuario
           const totalComm = custData.reduce((acc, c) => acc + (Number(c.commission_earned) || 0), 0);
-          setStats({
-            sales: custData.length,
-            comm: totalComm
-          });
+          setStats({ sales: custData.length, comm: totalComm });
         }
       } catch (err) {
-        console.error("Error inesperado en el dashboard:", err);
+        console.error("Error:", err);
       } finally {
         setLoading(false);
       }
     }
-
     loadDashboardData();
   }, [router]);
 
-  // Link dinámico que usa el ID real cargado desde Supabase
-  const promoLink = employee 
-    ? `https://energiecheck-v2.vercel.app/promotion?code=${employee.id_employee}`
+  // LINK PARA EL QR (Marca la fuente como "qr")
+  const qrLink = employee 
+    ? `https://energiecheck-v2.vercel.app/promotion?code=${employee.id_employee}&source=qr`
+    : "";
+
+  // LINK PARA COPIAR (Marca la fuente como "direct")
+  const copyLink = employee 
+    ? `https://energiecheck-v2.vercel.app/promotion?code=${employee.id_employee}&source=direct`
     : "";
 
   const copyToClipboard = () => {
-    if (!promoLink) return;
-    navigator.clipboard.writeText(promoLink);
+    if (!copyLink) return;
+    navigator.clipboard.writeText(copyLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#05070a] text-white flex items-center justify-center font-black italic uppercase tracking-widest">
-        Laden...
-      </div>
-    );
-  }
+  if (loading) return <div className="min-h-screen bg-[#05070a] text-white flex items-center justify-center font-black italic uppercase">Laden...</div>;
 
   return (
     <div className="min-h-screen bg-[#05070a] text-white font-sans text-left">
@@ -112,53 +93,41 @@ export default function WorkerDashboard() {
             </p>
           </div>
         </div>
-        <button 
-          onClick={() => { localStorage.clear(); router.push('/login'); }} 
-          className="text-gray-500 hover:text-white flex items-center gap-2 text-xs font-bold uppercase tracking-widest transition-colors"
-        >
+        <button onClick={() => { localStorage.clear(); router.push('/login'); }} className="text-gray-500 hover:text-white flex items-center gap-2 text-xs font-bold uppercase tracking-widest transition-colors">
           <LogOut size={14} /> Abmelden
         </button>
       </nav>
 
       <main className="max-w-7xl mx-auto p-6 md:p-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
         <div className="flex flex-col gap-6">
-          {/* QR Y LINK */}
           <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] flex flex-col items-center shadow-2xl backdrop-blur-sm">
             <h3 className="text-[#d4e137] font-black uppercase text-[10px] mb-6 tracking-widest italic text-center">Dein persönlicher QR-Code</h3>
+            
             <div className="p-4 bg-white rounded-[2rem] shadow-[0_0_50px_rgba(212,225,55,0.15)]">
               <QRCodeSVG 
-                value={promoLink} 
+                value={qrLink} 
                 size={180} 
                 level="H" 
                 imageSettings={{
-                  src: "/energiecheck.png", // Asegúrate que esté en la carpeta /public
-                  x: undefined,
-                  y: undefined,
+                  src: "/energiecheck.png",
                   height: 40,
                   width: 40,
-                  excavate: true, // Esto quita los puntos del QR detrás del logo para que sea legible
+                  excavate: true,
                 }}
               />
             </div>
-           
 
             <div className="mt-8 w-full">
               <p className="text-[9px] text-gray-600 uppercase font-bold text-center mb-2 tracking-widest italic">Link kopieren</p>
               <div className="flex items-center gap-2 bg-black/50 p-2 rounded-xl border border-white/5">
-                <input 
-                  readOnly 
-                  value={promoLink} 
-                  className="bg-transparent text-[10px] font-mono text-gray-500 w-full outline-none px-2"
-                />
-                <button onClick={copyToClipboard} className="p-2 bg-[#d4e137] text-black rounded-lg hover:scale-105 transition-all active:scale-95">
+                <input readOnly value={copyLink} className="bg-transparent text-[10px] font-mono text-gray-500 w-full outline-none px-2" />
+                <button onClick={copyToClipboard} className="p-2 bg-[#d4e137] text-black rounded-lg hover:scale-105 transition-all">
                   {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
                 </button>
               </div>
             </div>
           </div>
 
-          {/* COMISIONES */}
           <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] backdrop-blur-sm">
             <Wallet className="text-[#d4e137] mb-4" size={24} />
             <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Meine Provisionen</p>
@@ -166,7 +135,6 @@ export default function WorkerDashboard() {
           </div>
         </div>
 
-        {/* LISTA DE CLIENTES */}
         <div className="lg:col-span-2">
           <div className="bg-white/5 border border-white/10 rounded-[3rem] p-8 md:p-10 min-h-full backdrop-blur-sm">
             <div className="flex justify-between items-center mb-10">
@@ -184,20 +152,13 @@ export default function WorkerDashboard() {
                 </div>
               ) : (
                 customers.map((c: any) => (
-                  <div 
-                    key={c.id} 
-                    className="p-6 bg-black/40 rounded-[2rem] border border-white/5 flex justify-between items-center hover:border-white/20 transition-all group"
-                  >
+                  <div key={c.id} className="p-6 bg-black/40 rounded-[2rem] border border-white/5 flex justify-between items-center hover:border-white/20 transition-all group">
                     <div className="text-left">
-                      <p className="font-black text-lg tracking-tight group-hover:text-[#d4e137] transition-colors">
-                        {c.full_name}
-                      </p>
+                      <p className="font-black text-lg tracking-tight group-hover:text-[#d4e137] transition-colors">{c.full_name}</p>
                       <p className="text-[10px] text-gray-500 font-mono mt-1 uppercase font-bold tracking-widest">{c.email}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[#d4e137] font-black italic text-xl leading-none">
-                        {c.commission_earned} €
-                      </p>
+                      <p className="text-[#d4e137] font-black italic text-xl leading-none">{c.commission_earned} €</p>
                       <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500 italic mt-2 block">Registriert</span>
                     </div>
                   </div>
