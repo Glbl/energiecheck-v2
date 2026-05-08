@@ -119,16 +119,16 @@ function PromotionContent() {
   return (
     <div className="relative z-10 flex flex-col items-center text-center max-w-xl mx-auto px-4">
       
-      {/* IMAGEN DE FONDO DINÁMICA (Si José sube una, se verá aquí) */}
-      {activeLanding && (
-        <div className="absolute inset-0 -z-10 opacity-20 overflow-hidden">
-           <img 
-            src={`https://hoigzuytnzlkypkruyom.supabase.co/storage/v1/object/public/avatars/${activeLanding}`} 
-            className="w-full h-full object-cover blur-sm"
-            alt="Promotion Background"
-          />
-        </div>
-      )}
+     {/* IMAGEN DE FONDO DINÁMICA */}
+{activeLanding && (
+  <div className="absolute inset-0 -z-10 opacity-40 overflow-hidden">
+      <img 
+      src={`https://hoigzuytnzlkypkruyom.supabase.co/storage/v1/object/public/promotions/${activeLanding}`} 
+      className="w-full h-full object-cover" 
+      alt="Promotion Background"
+    />
+  </div>
+)}
 
       {currentStep === 1 && (
         <div className="animate-in fade-in duration-1000 w-full pb-16">
