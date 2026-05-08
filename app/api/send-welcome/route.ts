@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     const { email, fullName, username, password } = await req.json();
 
     const data = await resend.emails.send({
-      from: 'EnergieCheck <onboarding@resend.dev>', 
+      from: 'EnergieCheck <j.lorusso@energiecheck-24.de>', 
       to: [email],
       subject: 'Willkommen bei EnergieCheck!',
       html: `
