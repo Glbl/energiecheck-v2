@@ -6,29 +6,7 @@ import {
   Users, Wallet, BarChart3, Clock, LayoutDashboard, 
   LogOut, Search, ChevronRight, Trash2, UserPlus, X, Edit3, Activity, Upload 
 } from 'lucide-react';
-const updateLandingImage = async (e: any) => {
-  const file = e.target.files[0];
-  const fileName = `landing_${Date.now()}.png`;
-  // 1. Subir al bucket 'avatars' (o crea uno llamado 'promotions')
-  const { error: uploadError } = await supabase.storage
-    .from('avatars')
-    .upload(fileName, file);
 
-  if (!uploadError) {
-    // 2. Insertar en la tabla promotions y marcar como activa
-    // Primero desactivamos las anteriores
-    await supabase.from('promotions').update({ is_active: false }).eq('is_active', true);
-    
-    // Insertamos la nueva
-    await supabase.from('promotions').insert([{ 
-      title: 'Aktuelle Aktion', 
-      image_url: fileName, 
-      is_active: true 
-    }]);
-    
-    alert("Landing Image global actualizada");
-  }
-};
 export default function AdminDashboard() {
   const [employees, setEmployees] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
@@ -41,6 +19,7 @@ export default function AdminDashboard() {
   const [uploading, setUploading] = useState(false);
   const [promoImage, setPromoImage] = useState<File | null>(null);
   const router = useRouter();
+
   const STORAGE_URL = "https://hoigzuytnzlkypkruyom.supabase.co/storage/v1/object/public/avatars/";
 
   const [formData, setFormData] = useState({
@@ -52,28 +31,12 @@ export default function AdminDashboard() {
     if (userRole !== 'admin') { router.push('/login'); return; }
     loadAdminData();
     
-    // Suscripción Realtime para el Funnel
     const channel = supabase.channel('admin_live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_funnel_logs' }, () => loadAdminData())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [router]);
-const handleUploadLanding = async () => {
-  if (!promoImage) return;
-  
-  const fileName = `landing_${Date.now()}.png`;
-  const { data, error } = await supabase.storage
-    .from('promotions') // Crea un bucket llamado 'promotions'
-    .upload(fileName, promoImage);
 
-  if (data) {
-    await supabase.from('promotions').insert([{ 
-      title: "Nueva Promo", 
-      image_url: fileName 
-    }]);
-    alert("Landing actualizada para todos los trabajadores");
-  }
-};
   async function loadAdminData() {
     try {
       const { data: emps } = await supabase.from('employees').select('*').order('full_name');
@@ -84,6 +47,46 @@ const handleUploadLanding = async () => {
       if (logs) setFunnelLogs(logs);
     } catch (err) { console.error(err); } finally { setLoading(false); }
   }
+
+  // FUNCIÓN PARA ACTUALIZAR IMAGEN DE LANDING (GLOBAL)
+  const handleUploadLanding = async () => {
+    if (!promoImage) {
+      alert("Selecciona una imagen primero");
+      return;
+    }
+
+    setUploading(true);
+    const fileExt = promoImage.name.split('.').pop();
+    const fileName = `landing_${Date.now()}.${fileExt}`;
+
+    try {
+      // 1. Subir al Storage (Bucket 'promotions')
+      const { error: storageError } = await supabase.storage
+        .from('promotions')
+        .upload(fileName, promoImage);
+
+      if (storageError) throw storageError;
+
+      // 2. Desactivar promos anteriores
+      await supabase.from('promotions').update({ is_active: false }).eq('is_active', true);
+
+      // 3. Insertar nueva promo activa
+      const { error: dbError } = await supabase.from('promotions').insert([{ 
+        title: "Nueva Promo Global", 
+        image_url: fileName,
+        is_active: true
+      }]);
+
+      if (dbError) throw dbError;
+
+      alert("Landing actualizada para todos los trabajadores");
+      setPromoImage(null);
+    } catch (error: any) {
+      alert("Error: " + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleFileUpload = async (e: any) => {
     try {
@@ -103,7 +106,6 @@ const handleUploadLanding = async () => {
       await supabase.from('employees').update(formData).eq('id', selectedDbId);
     } else {
       await supabase.from('employees').insert([formData]);
-      // Aquí podrías disparar la API de email que creamos antes
     }
     setIsModalOpen(false);
     resetForm();
@@ -120,7 +122,6 @@ const handleUploadLanding = async () => {
   return (
     <div className="min-h-screen bg-[#05070a] text-white font-sans text-left pb-20">
       
-      {/* MODAL RESPONSIVE */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
           <div className="bg-[#0f1115] border border-white/10 w-full max-w-md rounded-[2.5rem] p-8 md:p-10 relative overflow-y-auto max-h-[95vh]">
@@ -148,7 +149,6 @@ const handleUploadLanding = async () => {
         </div>
       )}
 
-      {/* NAVBAR */}
       <nav className="border-b border-white/5 bg-black/50 backdrop-blur-xl h-20 flex items-center justify-between px-6 sticky top-0 z-50">
         <div className="flex items-center gap-3">
           <div className="bg-orange-600 p-2 rounded-lg rotate-3"><LayoutDashboard className="text-black" size={20} /></div>
@@ -158,7 +158,6 @@ const handleUploadLanding = async () => {
       </nav>
 
       <main className="max-w-7xl mx-auto p-4 md:p-10 space-y-8">
-        {/* STATS RESPONSIVE */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white/5 border border-white/10 p-5 rounded-[2rem]">
             <BarChart3 className="text-[#d4e137] mb-2" size={18} />
@@ -182,7 +181,6 @@ const handleUploadLanding = async () => {
           </div>
         </div>
 
-        {/* LIVE FUNNEL */}
         <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-6">
           <div className="flex items-center gap-3 mb-6"><Activity className="text-orange-500 animate-pulse" size={20} /><h3 className="text-lg font-black italic uppercase">Live Funnel</h3></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -194,14 +192,27 @@ const handleUploadLanding = async () => {
             ))}
           </div>
         </div>
-<div className="bg-white/5 p-6 rounded-[2rem] border border-white/10">
-  <h3 className="text-lg font-black italic uppercase mb-4">Landingpage-Bild aktualisieren</h3>
-  <input type="file" onChange={(e) => setPromoImage(e.target.files?.[0] || null)} className="mb-4 text-xs" />
-  <button onClick={handleUploadLanding} className="bg-orange-600 px-6 py-2 rounded-xl font-bold uppercase text-xs">
-    Subir y Aplicar
-  </button>
-</div>
-        {/* LISTA TRABAJADORES */}
+
+        {/* SECCIÓN ACTUALIZAR LANDING */}
+        <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10">
+          <h3 className="text-lg font-black italic uppercase mb-4 text-orange-500">Landingpage-Bild aktualisieren</h3>
+          <div className="flex flex-col md:flex-row items-center gap-4">
+            <input 
+              type="file" 
+              accept="image/*"
+              onChange={(e) => setPromoImage(e.target.files?.[0] || null)} 
+              className="text-xs file:bg-white/10 file:border-none file:text-white file:px-4 file:py-2 file:rounded-lg file:mr-4" 
+            />
+            <button 
+              onClick={handleUploadLanding} 
+              disabled={uploading}
+              className={`${uploading ? 'bg-gray-600' : 'bg-orange-600'} px-6 py-3 rounded-xl font-bold uppercase text-xs transition-all active:scale-95 disabled:opacity-50`}
+            >
+              {uploading ? 'Lädt...' : 'Subir y Aplicar'}
+            </button>
+          </div>
+        </div>
+
         <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
             <div className="flex items-center gap-4 w-full"><h3 className="text-xl font-black italic uppercase">Mitarbeiter</h3><button onClick={() => { resetForm(); setIsModalOpen(true); }} className="bg-[#d4e137] text-black p-2 rounded-full"><UserPlus size={18} /></button></div>
