@@ -126,7 +126,21 @@ export default function WorkerDashboard() {
           {/* QR Y LINK */}
           <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] flex flex-col items-center shadow-2xl backdrop-blur-sm">
             <h3 className="text-[#d4e137] font-black uppercase text-[10px] mb-6 tracking-widest italic text-center">Dein persönlicher QR-Code</h3>
-            
+            <div className="p-4 bg-white rounded-[2rem] shadow-[0_0_50px_rgba(212,225,55,0.15)]">
+              <QRCodeSVG 
+                value={promoLink} 
+                size={180} 
+                level="H" 
+                imageSettings={{
+                  src: "/energiecheck.png", // Asegúrate que esté en la carpeta /public
+                  x: undefined,
+                  y: undefined,
+                  height: 40,
+                  width: 40,
+                  excavate: true, // Esto quita los puntos del QR detrás del logo para que sea legible
+                }}
+              />
+            </div>
             <div className="p-4 bg-white rounded-[2rem] shadow-[0_0_50px_rgba(212,225,55,0.15)]">
               <QRCodeSVG value={promoLink} size={180} level="H" />
             </div>
