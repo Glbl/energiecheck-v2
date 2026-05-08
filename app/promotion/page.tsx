@@ -17,10 +17,28 @@ function PromotionContent() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeLanding, setActiveLanding] = useState('');
 
   const workerCodeParam = searchParams.get('code');
   const sourceParam = searchParams.get('source') || 'direct_link';
 
+  // 1. Cargar imagen de fondo dinámica (La que sube José)
+  useEffect(() => {
+    async function loadActiveLanding() {
+      const { data } = await supabase
+        .from('promotions')
+        .select('image_url')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (data) setActiveLanding(data.image_url);
+    }
+    loadActiveLanding();
+  }, []);
+
+  // 2. Tracking Inicial
   useEffect(() => {
     const initTracking = async () => {
       if (!workerCodeParam) return;
@@ -37,7 +55,6 @@ function PromotionContent() {
       const isMobile = /iPhone|Android/i.test(userAgent);
 
       try {
-        // REGISTRO 1: user_funnel_logs (Para el Live Panel de José)
         await supabase.from('user_funnel_logs').insert([{
           session_id: sId,
           worker_id: cleanCode,
@@ -46,7 +63,6 @@ function PromotionContent() {
           metadata: { source: sourceParam, device: isMobile ? 'mobile' : 'desktop' }
         }]);
 
-        // REGISTRO 2: leads_tracking (Tu tabla histórica con worker_code)
         await supabase.from('leads_tracking').insert([{
           worker_code: cleanCode,
           user_agent: userAgent,
@@ -60,7 +76,7 @@ function PromotionContent() {
     initTracking();
   }, [workerCodeParam, sourceParam]);
 
-  // Rastreo de pasos intermedios
+  // 3. Tracking de pasos
   useEffect(() => {
     if (currentStep === 1 || !workerCodeParam) return;
     const trackStep = async () => {
@@ -102,6 +118,18 @@ function PromotionContent() {
 
   return (
     <div className="relative z-10 flex flex-col items-center text-center max-w-xl mx-auto px-4">
+      
+      {/* IMAGEN DE FONDO DINÁMICA (Si José sube una, se verá aquí) */}
+      {activeLanding && (
+        <div className="absolute inset-0 -z-10 opacity-20 overflow-hidden">
+           <img 
+            src={`https://hoigzuytnzlkypkruyom.supabase.co/storage/v1/object/public/avatars/${activeLanding}`} 
+            className="w-full h-full object-cover blur-sm"
+            alt="Promotion Background"
+          />
+        </div>
+      )}
+
       {currentStep === 1 && (
         <div className="animate-in fade-in duration-1000 w-full pb-16">
           <div className="pt-10 pb-4">
@@ -165,7 +193,7 @@ function PromotionContent() {
           <div className="bg-[#d4e137] p-8 rounded-[2rem] text-black shadow-2xl mb-8">
             <Gift className="mx-auto mb-2" size={40} />
             <h2 className="text-2xl font-black uppercase italic tracking-tighter">FAST FERTIG!</h2>
-            <p className="font-bold text-xs mt-2 uppercase italic">Bitte füllen Sie Ihre Daten aus, um den 50€ Bonus zu aktivieren.</p>
+            <p className="font-bold text-xs mt-2 uppercase italic">Bitte füllen Sie Ihre Daten aus, um den 50€ Bonus zu activar.</p>
           </div>
           <form onSubmit={handleSubmitForm} className="space-y-4 text-left">
             <input type="text" placeholder="Vollständiger Name" required value={fullName} onChange={e => setFullName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-[#d4e137]" />

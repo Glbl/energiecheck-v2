@@ -6,7 +6,29 @@ import {
   Users, Wallet, BarChart3, Clock, LayoutDashboard, 
   LogOut, Search, ChevronRight, Trash2, UserPlus, X, Edit3, Activity, Upload 
 } from 'lucide-react';
+const updateLandingImage = async (e: any) => {
+  const file = e.target.files[0];
+  const fileName = `landing_${Date.now()}.png`;
+  // 1. Subir al bucket 'avatars' (o crea uno llamado 'promotions')
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(fileName, file);
 
+  if (!uploadError) {
+    // 2. Insertar en la tabla promotions y marcar como activa
+    // Primero desactivamos las anteriores
+    await supabase.from('promotions').update({ is_active: false }).eq('is_active', true);
+    
+    // Insertamos la nueva
+    await supabase.from('promotions').insert([{ 
+      title: 'Aktuelle Aktion', 
+      image_url: fileName, 
+      is_active: true 
+    }]);
+    
+    alert("Landing Image global actualizada");
+  }
+};
 export default function AdminDashboard() {
   const [employees, setEmployees] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
@@ -17,7 +39,7 @@ export default function AdminDashboard() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedDbId, setSelectedDbId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  
+  const [promoImage, setPromoImage] = useState<File | null>(null);
   const router = useRouter();
   const STORAGE_URL = "https://hoigzuytnzlkypkruyom.supabase.co/storage/v1/object/public/avatars/";
 
@@ -36,7 +58,22 @@ export default function AdminDashboard() {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [router]);
+const handleUploadLanding = async () => {
+  if (!promoImage) return;
+  
+  const fileName = `landing_${Date.now()}.png`;
+  const { data, error } = await supabase.storage
+    .from('promotions') // Crea un bucket llamado 'promotions'
+    .upload(fileName, promoImage);
 
+  if (data) {
+    await supabase.from('promotions').insert([{ 
+      title: "Nueva Promo", 
+      image_url: fileName 
+    }]);
+    alert("Landing actualizada para todos los trabajadores");
+  }
+};
   async function loadAdminData() {
     try {
       const { data: emps } = await supabase.from('employees').select('*').order('full_name');
@@ -157,7 +194,13 @@ export default function AdminDashboard() {
             ))}
           </div>
         </div>
-
+<div className="bg-white/5 p-6 rounded-[2rem] border border-white/10">
+  <h3 className="text-lg font-black italic uppercase mb-4">Landingpage-Bild aktualisieren</h3>
+  <input type="file" onChange={(e) => setPromoImage(e.target.files?.[0] || null)} className="mb-4 text-xs" />
+  <button onClick={handleUploadLanding} className="bg-orange-600 px-6 py-2 rounded-xl font-bold uppercase text-xs">
+    Subir y Aplicar
+  </button>
+</div>
         {/* LISTA TRABAJADORES */}
         <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
