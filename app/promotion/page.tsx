@@ -22,7 +22,7 @@ function PromotionContent() {
   const workerCodeParam = searchParams.get('code');
   const sourceParam = searchParams.get('source') || 'direct_link';
 
-  // 1. Cargar imagen de fondo dinámica (La que sube José)
+  // 1. Cargar imagen de fondo dinámica
   useEffect(() => {
     async function loadActiveLanding() {
       const { data } = await supabase
@@ -119,61 +119,53 @@ function PromotionContent() {
   return (
     <div className="relative z-10 flex flex-col items-center text-center max-w-xl mx-auto px-4">
       
-     {/* IMAGEN DE FONDO DINÁMICA */}
-{activeLanding && (
-  <div className="absolute inset-0 -z-10 opacity-40 overflow-hidden">
-      <img 
-      src={`https://hoigzuytnzlkypkruyom.supabase.co/storage/v1/object/public/promotions/${activeLanding}`} 
-      className="w-full h-full object-cover" 
-      alt="Promotion Background"
-    />
-  </div>
-)}
-
+      {/* PASO 1: LANDING */}
       {currentStep === 1 && (
         <div className="animate-in fade-in duration-1000 w-full pb-16">
-          <div className="pt-10 pb-4">
-            <h2 className="text-[#d4e137] text-4xl font-black italic tracking-tighter uppercase leading-none">500€ sofort CASH</h2>
-            <p className="text-white text-3xl font-black mt-1">+</p>
-          </div>
-          
-          <div className="relative w-full mt-2 flex justify-center">
-            <div className="absolute bottom-6 w-[80%] h-[15px] bg-[#d4e137] rounded-[100%] blur-[25px] opacity-30"></div>
-            <img src="/produkte-bundle.webp" alt="Bundle" className="relative z-10 w-[90%] h-auto drop-shadow-2xl" style={{ maskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)' }} />
-          </div>
-
-          <div className="mt-8 space-y-1">
-            <h1 className="text-4xl font-black uppercase italic tracking-tighter">ENERGIE <span className="text-[#d4e137]">FÖRDERUNG</span></h1>
-            <h1 className="text-4xl font-black uppercase italic tracking-tighter">sichern</h1>
-          </div>
-
-          <div className="flex items-center justify-center gap-6 w-full mt-8">
-            <img src="/germany-flag3.png" alt="DE" className="w-12 h-auto animate-bounce duration-[3000ms]" />
-            <div className="flex flex-col items-center">
-              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Zusätzliche Förderung möglich</p>
-              <h3 className="text-lg font-black uppercase italic mt-2 tracking-tight">MÜNCHEN SOLAR BONUS</h3>
-              <p className="text-[#d4e137] text-3xl font-black">+ 320 €</p>
+          {activeLanding ? (
+            /* DISEÑO DE JOSÉ (IMAGEN DINÁMICA) */
+            <div className="fixed inset-0 z-50 bg-[#05070a] flex flex-col items-center justify-center">
+              <img 
+                src={`https://hoigzuytnzlkypkruyom.supabase.co/storage/v1/object/public/promotions/${activeLanding}`} 
+                className="w-full h-full object-contain"
+                alt="Promotion Design"
+              />
+              <button 
+                onClick={() => setCurrentStep(2)}
+                className="absolute bottom-10 bg-[#d4e137] px-10 py-4 rounded-full text-black font-black uppercase italic shadow-2xl hover:scale-105 transition-transform"
+              >
+                Jetzt prüfen
+              </button>
             </div>
-            <img src="/germany-flag3.png" alt="DE" className="w-12 h-auto animate-bounce duration-[3000ms]" />
-          </div>
+          ) : (
+            /* DISEÑO POR DEFECTO (EL "BACKUP") */
+            <>
+              <div className="pt-10 pb-4">
+                <h2 className="text-[#d4e137] text-4xl font-black italic tracking-tighter uppercase leading-none">500€ sofort CASH</h2>
+                <p className="text-white text-3xl font-black mt-1">+</p>
+              </div>
+              
+              <div className="relative w-full mt-2 flex justify-center">
+                <div className="absolute bottom-6 w-[80%] h-[15px] bg-[#d4e137] rounded-[100%] blur-[25px] opacity-30"></div>
+                <img src="/produkte-bundle.webp" alt="Bundle" className="relative z-10 w-[90%] h-auto drop-shadow-2xl" />
+              </div>
 
-          <div className="w-full max-w-xs mt-10 mx-auto">
-            <button onClick={() => setCurrentStep(2)} className="w-full py-5 bg-[#d4e137] text-black font-black text-xl rounded-full shadow-[0_15px_35px_rgba(212,225,55,0.25)] hover:scale-105 transition-all uppercase italic">
-              Jetzt Tarif prüfen
-            </button>
-          </div>
+              <div className="mt-8 space-y-1">
+                <h1 className="text-4xl font-black uppercase italic tracking-tighter">ENERGIE <span className="text-[#d4e137]">FÖRDERUNG</span></h1>
+                <h1 className="text-4xl font-black uppercase italic tracking-tighter">sichern</h1>
+              </div>
 
-          <div className="mt-8 text-center space-y-6">
-            <p className="text-sm font-medium text-white">30–50% Stromkosten sparen mit der <br /><span className="text-[#d4e137]">Eco-Home-E-Station</span></p>
-            <div className="text-[17px] font-black text-white leading-snug">
-              <p>In unter <span className="text-[#d4e137]">5 Minuten</span> starten</p>
-              <p>Bis zu <span className="text-[#d4e137]">820 €</span> verdienen</p>
-              <p>+ bis zu <span className="text-[#d4e137]">800 €</span> jährlich sparen</p>
-            </div>
-          </div>
+              <div className="w-full max-w-xs mt-10 mx-auto">
+                <button onClick={() => setCurrentStep(2)} className="w-full py-5 bg-[#d4e137] text-black font-black text-xl rounded-full uppercase italic">
+                  Jetzt Tarif prüfen
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
+      {/* PASO 2: VENTAJAS */}
       {currentStep === 2 && (
         <div className="max-w-md mx-auto p-8 pt-20 animate-in slide-in-from-right duration-500 text-center relative z-20">
           <CheckCircle2 className="text-[#d4e137] mx-auto mb-6" size={60} />
@@ -188,12 +180,13 @@ function PromotionContent() {
         </div>
       )}
 
+      {/* PASO 3: FORMULARIO */}
       {currentStep === 3 && (
         <div className="max-w-md mx-auto p-4 pt-10 animate-in slide-in-from-right duration-500 text-center relative z-20 w-full">
           <div className="bg-[#d4e137] p-8 rounded-[2rem] text-black shadow-2xl mb-8">
             <Gift className="mx-auto mb-2" size={40} />
             <h2 className="text-2xl font-black uppercase italic tracking-tighter">FAST FERTIG!</h2>
-            <p className="font-bold text-xs mt-2 uppercase italic">Bitte füllen Sie Ihre Daten aus, um den 50€ Bonus zu activar.</p>
+            <p className="font-bold text-xs mt-2 uppercase italic">Bitte füllen Sie Ihre Datos aus.</p>
           </div>
           <form onSubmit={handleSubmitForm} className="space-y-4 text-left">
             <input type="text" placeholder="Vollständiger Name" required value={fullName} onChange={e => setFullName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-[#d4e137]" />
@@ -217,7 +210,6 @@ export default function PromotionPage() {
           src="/germany-bg-glow.webp" 
           alt="DE Map" 
           className="w-full max-w-2xl h-auto object-contain" 
-          style={{ maskImage: 'radial-gradient(circle, black 30%, transparent 80%)', WebkitMaskImage: 'radial-gradient(circle, black 30%, transparent 80%)' }} 
         />
       </div>
       <Suspense fallback={<div className="text-white text-center pt-20 font-black italic">LADEN...</div>}>
