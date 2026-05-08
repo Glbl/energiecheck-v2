@@ -15,7 +15,7 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
 
-  // URL BASE DEL BUCKET PÚBLICO
+  // Tu URL de Supabase Storage
   const STORAGE_URL = "https://hoigzuytnzlkypkruyom.supabase.co/storage/v1/object/public/avatars/";
 
   useEffect(() => {
@@ -27,6 +27,7 @@ export default function AdminDashboard() {
 
     loadAdminData();
 
+    // SUSCRIPCIÓN REALTIME
     const channel = supabase
       .channel('admin_live_updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, () => loadAdminData())
@@ -46,7 +47,7 @@ export default function AdminDashboard() {
       if (custs) setCustomers(custs);
       if (logs) setFunnelLogs(logs);
     } catch (err) {
-      console.error("Error:", err);
+      console.error("Error cargando datos:", err);
     } finally {
       setLoading(false);
     }
@@ -66,14 +67,24 @@ export default function AdminDashboard() {
     emp.role === 'worker' && emp.full_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) return <div className="min-h-screen bg-[#05070a] text-white flex items-center justify-center font-black italic uppercase">Loading Master...</div>;
+  if (loading) return (
+    <div className="min-h-screen bg-[#05070a] text-white flex items-center justify-center font-black italic uppercase tracking-widest">
+      MASTER CONTROL LOADING...
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#05070a] text-white font-sans text-left pb-20">
+      {/* NAVBAR */}
       <nav className="border-b border-white/5 bg-black/50 backdrop-blur-xl h-20 flex items-center justify-between px-10 sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <div className="bg-orange-600 p-2 rounded-lg rotate-3 shadow-lg shadow-orange-600/20"><LayoutDashboard className="text-black" size={20} /></div>
-          <h1 className="text-xl font-black italic uppercase tracking-tighter leading-none">Admin Panel</h1>
+          <div className="bg-orange-600 p-2 rounded-lg rotate-3 shadow-lg shadow-orange-600/20">
+            <LayoutDashboard className="text-black" size={20} />
+          </div>
+          <div>
+            <h1 className="text-xl font-black italic uppercase tracking-tighter leading-none">Admin Panel</h1>
+            <p className="text-orange-500 text-[9px] font-bold uppercase tracking-[0.2em] mt-1 italic">Master Control</p>
+          </div>
         </div>
         <button onClick={() => { localStorage.clear(); router.push('/login'); }} className="text-gray-500 hover:text-white flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
           <LogOut size={14} /> Abmelden
@@ -81,15 +92,31 @@ export default function AdminDashboard() {
       </nav>
 
       <main className="max-w-7xl mx-auto p-6 md:p-10 space-y-10">
-        {/* STATS */}
+        {/* STATS CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem]"><BarChart3 className="text-[#d4e137] mb-4" size={20} /><h2 className="text-3xl font-black italic">{totalUmsatz.toLocaleString('de-DE')} €</h2></div>
-          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem]"><Clock className="text-orange-500 mb-4" size={20} /><h2 className="text-3xl font-black italic">{totalOffen.toLocaleString('de-DE')} €</h2></div>
-          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem]"><Wallet className="text-blue-400 mb-4" size={20} /><h2 className="text-3xl font-black italic">{totalBezahlt.toLocaleString('de-DE')} €</h2></div>
-          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem]"><Users className="text-purple-400 mb-4" size={20} /><h2 className="text-3xl font-black italic">{customers.length}</h2></div>
+          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem]">
+            <BarChart3 className="text-[#d4e137] mb-4" size={20} />
+            <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Umsatzvolumen</p>
+            <h2 className="text-3xl font-black italic">{totalUmsatz.toLocaleString('de-DE')} €</h2>
+          </div>
+          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem]">
+            <Clock className="text-orange-500 mb-4" size={20} />
+            <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Offen</p>
+            <h2 className="text-3xl font-black italic">{totalOffen.toLocaleString('de-DE')} €</h2>
+          </div>
+          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem]">
+            <Wallet className="text-blue-400 mb-4" size={20} />
+            <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Bezahlt</p>
+            <h2 className="text-3xl font-black italic">{totalBezahlt.toLocaleString('de-DE')} €</h2>
+          </div>
+          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem]">
+            <Users className="text-purple-400 mb-4" size={20} />
+            <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Kundenanzahl</p>
+            <h2 className="text-3xl font-black italic">{customers.length}</h2>
+          </div>
         </div>
 
-        {/* LIVE FUNNEL CON AVATARES */}
+        {/* LIVE FUNNEL */}
         <div className="bg-white/5 border border-white/10 rounded-[3rem] p-8 md:p-10 backdrop-blur-sm">
           <div className="flex items-center gap-3 mb-8">
             <Activity className="text-orange-500 animate-pulse" size={24} />
@@ -113,7 +140,7 @@ export default function AdminDashboard() {
                     </div>
                     <span className="text-[10px] text-gray-600 font-mono italic">{getTimeAgo(log.created_at)}</span>
                   </div>
-                  <p className="text-xs text-gray-500 uppercase font-bold mb-1 italic">Schritt:</p>
+                  <p className="text-xs text-gray-500 uppercase font-bold mb-1 italic tracking-wider">Schritt:</p>
                   <p className="text-sm font-black text-white uppercase truncate italic">{log.current_step}</p>
                 </div>
               );
@@ -121,13 +148,19 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* MITARBEITER LISTE */}
+        {/* LISTA DE EMPLEADOS */}
         <div className="bg-white/5 border border-white/10 rounded-[3rem] p-8 md:p-10">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-10">
             <h3 className="text-2xl font-black italic uppercase tracking-tight">Mitarbeiter Liste</h3>
             <div className="relative w-full md:w-72">
-              <Search className="absolute left-4 top-3.5 text-gray-400" size={18} />
-              <input type="text" placeholder="Suchen..." className="w-full bg-black/40 border border-white/10 rounded-2xl py-3 pl-12 text-sm outline-none focus:border-orange-500" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <Search className="absolute left-4 top-3.5 text-gray-500" size={18} />
+              <input 
+                type="text" 
+                placeholder="Suchen..." 
+                className="w-full bg-black/40 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-sm outline-none focus:border-orange-500 transition-all" 
+                value={searchTerm} 
+                onChange={(e) => setSearchTerm(e.target.value)} 
+              />
             </div>
           </div>
           <div className="grid grid-cols-1 gap-4">
@@ -142,7 +175,7 @@ export default function AdminDashboard() {
                     )}
                   </div>
                   <div className="text-left min-w-0">
-                    <p className="font-black text-lg group-hover:text-orange-500 transition-colors uppercase italic truncate">{emp.full_name}</p>
+                    <p className="font-black text-lg group-hover:text-orange-500 transition-colors uppercase italic truncate tracking-tight">{emp.full_name}</p>
                     <p className="text-[10px] text-gray-500 font-mono font-bold tracking-widest">{emp.id_employee}</p>
                   </div>
                 </div>
