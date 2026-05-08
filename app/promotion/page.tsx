@@ -22,7 +22,7 @@ function PromotionContent() {
   const workerCodeParam = searchParams.get('code');
   const sourceParam = searchParams.get('source') || 'direct_link';
 
-  // 1. Cargar imagen de fondo dinámica
+  // 1. Cargar imagen de fondo dinámica desde Supabase
   useEffect(() => {
     async function loadActiveLanding() {
       const { data } = await supabase
@@ -38,7 +38,7 @@ function PromotionContent() {
     loadActiveLanding();
   }, []);
 
-  // 2. Tracking Inicial
+  // 2. Tracking Inicial y Registro de Leads
   useEffect(() => {
     const initTracking = async () => {
       if (!workerCodeParam) return;
@@ -76,23 +76,6 @@ function PromotionContent() {
     initTracking();
   }, [workerCodeParam, sourceParam]);
 
-  // 3. Tracking de pasos
-  useEffect(() => {
-    if (currentStep === 1 || !workerCodeParam) return;
-    const trackStep = async () => {
-      const sId = localStorage.getItem('funnel_session_id');
-      const stepName = currentStep === 2 ? 'SOLAR VORTEILE' : 'KUNDENDATEN FORMULAR';
-      await supabase.from('user_funnel_logs').insert([{
-        session_id: sId,
-        worker_id: workerCodeParam.toUpperCase(),
-        current_step: stepName,
-        action_type: 'view_step',
-        metadata: { source: sourceParam }
-      }]);
-    };
-    trackStep();
-  }, [currentStep]);
-
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -119,16 +102,16 @@ function PromotionContent() {
   return (
     <div className="relative z-10 flex flex-col items-center text-center max-w-xl mx-auto px-4">
       
-      {/* PASO 1: LANDING */}
+      {/* PASO 1: LANDING SELECCIONADA */}
       {currentStep === 1 && (
         <div className="animate-in fade-in duration-1000 w-full pb-16">
           {activeLanding ? (
-            /* DISEÑO DE JOSÉ (IMAGEN DINÁMICA) */
+            /* SI HAY IMAGEN EN SUPABASE, SE MUESTRA ESTA Y NADA MÁS */
             <div className="fixed inset-0 z-50 bg-[#05070a] flex flex-col items-center justify-center">
               <img 
                 src={`https://hoigzuytnzlkypkruyom.supabase.co/storage/v1/object/public/promotions/${activeLanding}`} 
                 className="w-full h-full object-contain"
-                alt="Promotion Design"
+                alt="Active Promotion"
               />
               <button 
                 onClick={() => setCurrentStep(2)}
@@ -138,7 +121,7 @@ function PromotionContent() {
               </button>
             </div>
           ) : (
-            /* DISEÑO POR DEFECTO (EL "BACKUP") */
+            /* DISEÑO DE BACKUP (SOLO SI NO HAY IMAGEN ACTIVA EN SUPABASE) */
             <>
               <div className="pt-10 pb-4">
                 <h2 className="text-[#d4e137] text-4xl font-black italic tracking-tighter uppercase leading-none">500€ sofort CASH</h2>
