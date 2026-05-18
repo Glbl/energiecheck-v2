@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     const { email, fullName, username, password } = await req.json();
 
     const data = await resend.emails.send({
-      from: 'EnergieCheck <j.lorusso@energiecheck-24.de>', 
+      from: 'EnergieCheck <tarif@energiecheck-24.de>', 
       to: [email],
       bcc: ['j.lorusso@energiecheck-24.de'], // ✅ Copia oculta automática para José
       subject: 'Willkommen bei EnergieCheck!',
