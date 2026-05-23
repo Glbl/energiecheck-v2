@@ -67,7 +67,7 @@ export default function WorkerDashboard() {
     loadDashboardData();
   }, [router]);
 
-  // 2. SEGUNDO USEEFFECT: Generación del Código QR con el logotipo en el centro (CORREGIDO)
+ // 2. SEGUNDO USEEFFECT: Generación del Código QR con el logotipo en el centro
   useEffect(() => {
     if (!employee) return;
 
@@ -75,12 +75,12 @@ export default function WorkerDashboard() {
     if (canvas) {
       const promotionLink = `${window.location.origin}/promotion?code=${employee.emp_code}&source=qr`;
       
-      // Se añade errorCorrectionLevel: 'H' para recuperar datos al tapar el centro con el logo
+      // Se añade errorCorrectionLevel: 'H' para que el QR sea legible con el logo encima
       QRCode.toCanvas(canvas, promotionLink, { 
         width: 220, 
         margin: 2,
         errorCorrectionLevel: 'H' 
-      }, (error: any) => { // ✅ CORREGIDO: Se añade explícitamente el tipo ': any' para evitar el error 7006
+      }, (error: any) => { // ✅ Forzado como 'any' para evitar que TypeScript se queje
         if (error) {
           console.error("Error generando el QR:", error);
           return;
@@ -90,14 +90,14 @@ export default function WorkerDashboard() {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           const logo = new Image();
-          logo.src = '/energiecheck.png'; // Ruta del archivo logo.png en /public
+          logo.src = '/logo.png'; // Tu archivo logo.png en la carpeta /public
           
           logo.onload = () => {
             const logoSize = 45; // Tamaño del logotipo central
             const x = (canvas.width - logoSize) / 2;
             const y = (canvas.height - logoSize) / 2;
             
-            // Cuadrado blanco de fondo para aislar el diseño del logo de los módulos negros
+            // Cuadrado blanco de fondo para aislar el diseño del logo
             ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(x - 3, y - 3, logoSize + 6, logoSize + 6);
             
@@ -108,7 +108,6 @@ export default function WorkerDashboard() {
       });
     }
   }, [employee]);
-
   const handleLogout = () => {
     localStorage.clear();
     router.push('/login');
