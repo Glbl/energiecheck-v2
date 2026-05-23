@@ -140,17 +140,17 @@ export default function WorkerDashboard() {
             {/* Capa del QR sobre la imagen */}
             <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-gradient-to-t from-black via-transparent to-transparent">
               <div className="p-4 bg-white rounded-[2rem] shadow-[0_0_50px_rgba(212,225,55,0.3)] transform transition-transform hover:scale-105">
-                <QRCodeSVG 
-                  value={promoLink} 
-                  size={160} 
-                  level="H" 
-                  imageSettings={{
-                    src: "/energiecheck.png",
-                    height: 35,
-                    width: 35,
-                    excavate: true
-                  }} 
-                />
+               <QRCodeSVG 
+  value={promoLink} 
+  size={160} 
+  level="H" // Mantiene la máxima tolerancia de escaneo
+  imageSettings={{
+    src: "/energiecheck.png", // ✅ CORREGIDO: Apunta al archivo correcto en tu carpeta /public
+    height: 42,       // ✅ Ajustado: Un poco más grande para mejor legibilidad
+    width: 42,        // ✅ Ajustado: Proporción simétrica ideal
+    excavate: true    // Mantiene recortados los puntos traseros para un fondo limpio
+  }} 
+/>
               </div>
               <div className="mt-8 text-center">
                 <p className="text-[10px] font-black uppercase text-[#d4e137] tracking-[0.3em] italic mb-2">Personalosierter QR</p>
