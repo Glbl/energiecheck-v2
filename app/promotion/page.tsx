@@ -92,7 +92,7 @@ function PromotionContent() {
         metadata: { source: sourceParam }
       }]);
 
-      window.location.href = "https://energiecheck-24.de";
+      window.location.href = "https://energiecheck-24.myshopify.com/";
     } catch (error) {
       setIsSubmitting(false);
       alert("Fehler.");
