@@ -1,19 +1,29 @@
-'use client';
-
-import { useEffect, useState } from 'react';
+"use client";
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/app/lib/supabase';
-import QRCode from 'qrcode';
+import { 
+  Copy, 
+  CheckCircle2, 
+  Users, 
+  Wallet, 
+  LogOut, 
+  LayoutDashboard,
+  Image as ImageIcon
+} from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function WorkerDashboard() {
-  const router = useRouter();
   const [employee, setEmployee] = useState<any>(null);
-  const [activeLanding, setActiveLanding] = useState<string | null>(null);
   const [customers, setCustomers] = useState<any[]>([]);
+  const [activeLanding, setActiveLanding] = useState('');
   const [stats, setStats] = useState({ sales: 0, comm: 0 });
+  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-  // 1. PRIMER USEEFFECT: Carga de sesión, autenticación y datos de Supabase (INTACTO)
+  const STORAGE_URL = "https://hoigzuytnzlkypkruyom.supabase.co/storage/v1/object/public/avatars/";
+
   useEffect(() => {
     const workerId = localStorage.getItem('worker_id');
     const userRole = localStorage.getItem('user_role');
@@ -67,173 +77,143 @@ export default function WorkerDashboard() {
     loadDashboardData();
   }, [router]);
 
- // 2. SEGUNDO USEEFFECT: Generación del Código QR con el logotipo en el centro
-  useEffect(() => {
-    if (!employee) return;
+  // Link dinámico para el QR y para copiar
+  const promoLink = employee 
+    ? `https://energiecheck-v2.vercel.app/promotion?code=${employee.id_employee}&source=qr`
+    : "";
 
-    const canvas = document.getElementById('qr-canvas') as HTMLCanvasElement;
-    if (canvas) {
-      const promotionLink = `${window.location.origin}/promotion?code=${employee.emp_code}&source=qr`;
-      
-      // Se añade errorCorrectionLevel: 'H' para que el QR sea legible con el logo encima
-      QRCode.toCanvas(canvas, promotionLink, { 
-        width: 220, 
-        margin: 2,
-        errorCorrectionLevel: 'H' 
-      }, (error: any) => { // ✅ Forzado como 'any' para evitar que TypeScript se queje
-        if (error) {
-          console.error("Error generando el QR:", error);
-          return;
-        }
-
-        // Proceso de dibujo del logo en el Canvas
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          const logo = new Image();
-          logo.src = '/logo.png'; // Tu archivo logo.png en la carpeta /public
-          
-          logo.onload = () => {
-            const logoSize = 45; // Tamaño del logotipo central
-            const x = (canvas.width - logoSize) / 2;
-            const y = (canvas.height - logoSize) / 2;
-            
-            // Cuadrado blanco de fondo para aislar el diseño del logo
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(x - 3, y - 3, logoSize + 6, logoSize + 6);
-            
-            // Renderizado final del logo de la empresa
-            ctx.drawImage(logo, x, y, logoSize, logoSize);
-          };
-        }
-      });
-    }
-  }, [employee]);
-  const handleLogout = () => {
-    localStorage.clear();
-    router.push('/login');
+  const copyToClipboard = () => {
+    if (!promoLink) return;
+    navigator.clipboard.writeText(promoLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center font-bold">
-        Laden...
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen bg-[#05070a] text-white flex items-center justify-center font-black italic uppercase tracking-widest">
+      WIRD GELADEN...
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 md:p-8">
-      {/* Encabezado */}
-      <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center border-b border-[#BCBE32] pb-6 mb-8 gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-[#BCBE32]">
-            MITARBEITER PORTAL
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Willkommen zurück, <span className="text-white font-semibold">{employee?.first_name} {employee?.last_name}</span>
-          </p>
+    <div className="min-h-screen bg-[#05070a] text-white font-sans text-left">
+      {/* NAVBAR */}
+      <nav className="border-b border-white/5 bg-black/50 backdrop-blur-xl h-20 flex items-center justify-between px-6 md:px-10 sticky top-0 z-50">
+        <div className="flex items-center gap-3">
+          <div className="bg-[#d4e137] p-2 rounded-lg rotate-3 shadow-[0_0_15px_rgba(212,225,55,0.3)]">
+            <LayoutDashboard className="text-black" size={20} />
+          </div>
+          <div>
+            <h1 className="text-xl font-black italic uppercase tracking-tighter leading-none">Mitarbeiter Portal</h1>
+            <p className="text-[10px] text-[#d4e137] uppercase tracking-[0.2em] mt-1 font-bold italic">
+              Willkommen, {employee?.full_name}
+            </p>
+          </div>
         </div>
         <button 
-          onClick={handleLogout}
-          className="bg-red-600 text-white font-bold px-5 py-2.结尾 rounded-full text-sm hover:bg-red-700 transition-all shadow-md self-end sm:self-center"
+          onClick={() => { localStorage.clear(); router.push('/login'); }} 
+          className="text-gray-500 hover:text-white flex items-center gap-2 text-xs font-bold uppercase tracking-widest"
         >
-          Abmelden
+          <LogOut size={14} /> Abmelden
         </button>
-      </div>
+      </nav>
 
-      {/* Contenido Principal */}
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <main className="max-w-7xl mx-auto p-6 md:p-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Columna Izquierda: QR y Estadísticas */}
-        <div className="flex flex-col gap-6 lg:col-span-1">
-          {/* Tarjeta del Código QR Único */}
-          <div className="bg-[#111111] border border-gray-800 rounded-2xl p-6 text-center flex flex-col items-center shadow-lg">
-            <h3 className="text-[#BCBE32] font-bold text-lg uppercase mb-2 tracking-wide">Dein QR-Code</h3>
-            <p className="text-xs text-gray-400 mb-6">Kunden scannen diesen Code, um sich unter dir zu registrieren.</p>
-            
-            <div className="bg-white p-3 rounded-xl inline-block shadow-inner">
-              <canvas id="qr-canvas"></canvas>
-            </div>
-
-            <div className="mt-6 bg-[#1A1A1A] px-4 py-2 rounded-lg border border-gray-850 w-full">
-              <span className="text-xs text-gray-400 block uppercase font-mono">Code:</span>
-              <strong className="text-white text-base tracking-widest font-mono">{employee?.emp_code}</strong>
-            </div>
-          </div>
-
-          {/* Tarjeta de Estadísticas de Rendimiento */}
-          <div className="bg-[#111111] border border-gray-800 rounded-2xl p-6 shadow-lg">
-            <h3 className="text-white font-bold text-lg mb-4 tracking-wide uppercase border-b border-gray-850 pb-2">Deine Stats</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-[#1A1A1A] p-4 rounded-xl border border-gray-850 text-center">
-                <span className="text-xs text-gray-400 block uppercase">Kunden</span>
-                <strong className="text-2xl font-black text-[#BCBE32] block mt-1">{stats.sales}</strong>
-              </div>
-              <div className="bg-[#1A1A1A] p-4 rounded-xl border border-gray-850 text-center">
-                <span className="text-xs text-gray-400 block uppercase">Provision</span>
-                <strong className="text-2xl font-black text-green-400 block mt-1">€{stats.comm}</strong>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Columna Derecha: Clientes Registrados y Landing Activa */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          {/* Vista de la Campaña / Landing Activa asignada por José */}
-          {activeLanding && (
-            <div className="bg-[#111111] border border-gray-800 rounded-2xl p-6 shadow-lg">
-              <h3 className="text-white font-bold text-lg mb-3 tracking-wide uppercase">Aktuelle Kampagne</h3>
-              <div className="rounded-xl overflow-hidden border border-gray-850 max-h-60 bg-black flex items-center justify-center">
-                <img 
-                  src={activeLanding} 
-                  alt="Aktuelle Promotion" 
-                  className="w-full h-full object-cover max-h-60"
-                  loading="lazy"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Tabla de Control de Clientes Adquiridos */}
-          <div className="bg-[#111111] border border-gray-800 rounded-2xl p-6 shadow-lg flex-1">
-            <h3 className="text-white font-bold text-lg mb-4 tracking-wide uppercase border-b border-gray-850 pb-2">Registrierte Kunden</h3>
-            {customers.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 text-sm italic">
-                Noch keine Kunden registriert.
-              </div>
+        <div className="flex flex-col gap-6">
+          {/* SECCIÓN DE LA LANDING DINÁMICA CON QR */}
+          <div className="relative w-full rounded-[2.5rem] overflow-hidden border border-white/10 bg-black aspect-[3/4] shadow-2xl group">
+            {/* Imagen que sube José */}
+            {activeLanding ? (
+              <img 
+                src={`${STORAGE_URL}${activeLanding}`} 
+                className="w-full h-full object-cover opacity-60 transition-opacity group-hover:opacity-40"
+                alt="Aktuelle Promotion"
+              />
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-gray-800 text-xs text-gray-400 uppercase tracking-wider">
-                      <th className="py-3 px-2">Name</th>
-                      <th className="py-3 px-2">E-Mail</th>
-                      <th className="py-3 px-2">Datum</th>
-                      <th className="py-3 px-2 text-right">Provision</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-850 text-sm">
-                    {customers.map((c: any) => (
-                      <tr key={c.id_customer} className="hover:bg-[#1A1A1A] transition-colors">
-                        <td className="py-3 px-2 font-medium text-white">{c.first_name} {c.last_name}</td>
-                        <td className="py-3 px-2 text-gray-300 font-mono text-xs">{c.email}</td>
-                        <td className="py-3 px-2 text-gray-400 text-xs">
-                          {new Date(c.registration_date).toLocaleDateString('de-DE')}
-                        </td>
-                        <td className="py-3 px-2 text-right font-bold text-green-400">
-                          €{Number(c.commission_earned || 0)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="w-full h-full flex flex-col items-center justify-center text-gray-700 gap-4">
+                <ImageIcon size={40} />
+                <p className="text-[10px] font-bold uppercase italic tracking-widest">Warten auf Landing-Design</p>
               </div>
             )}
+
+            {/* Capa del QR sobre la imagen */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-gradient-to-t from-black via-transparent to-transparent">
+              <div className="p-4 bg-white rounded-[2rem] shadow-[0_0_50px_rgba(212,225,55,0.3)] transform transition-transform hover:scale-105">
+                <QRCodeSVG 
+                  value={promoLink} 
+                  size={160} 
+                  level="H" 
+                  imageSettings={{
+                    src: "/energiecheck.png",
+                    height: 35,
+                    width: 35,
+                    excavate: true
+                  }} 
+                />
+              </div>
+              <div className="mt-8 text-center">
+                <p className="text-[10px] font-black uppercase text-[#d4e137] tracking-[0.3em] italic mb-2">Personalosierter QR</p>
+                <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest leading-tight">
+                  Scannen lassen, <br/>um Provision zu sichern
+                </p>
+              </div>
+            </div>
           </div>
 
+          {/* LINK DE COPIADO RÁPIDO */}
+          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] backdrop-blur-sm">
+            <p className="text-[9px] text-gray-500 uppercase font-bold text-center mb-3 tracking-widest italic">Link manuell teilen</p>
+            <div className="flex items-center gap-2 bg-black/50 p-2 rounded-xl border border-white/5">
+              <input readOnly value={promoLink} className="bg-transparent text-[10px] font-mono text-gray-600 w-full outline-none px-2" />
+              <button onClick={copyToClipboard} className="p-3 bg-[#d4e137] text-black rounded-xl hover:scale-105 transition-all">
+                {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
+              </button>
+            </div>
+          </div>
+
+          {/* COMISIONES */}
+          <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] backdrop-blur-sm">
+            <Wallet className="text-[#d4e137] mb-4" size={24} />
+            <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest italic">Meine Provisionen</p>
+            <h2 className="text-4xl font-black italic mt-1 text-[#d4e137]">{stats.comm.toLocaleString('de-DE')} €</h2>
+          </div>
         </div>
 
-      </div>
+        {/* LISTA DE CLIENTES */}
+        <div className="lg:col-span-2">
+          <div className="bg-white/5 border border-white/10 rounded-[3rem] p-8 md:p-10 min-h-full backdrop-blur-sm">
+            <div className="flex justify-between items-center mb-10">
+              <h3 className="text-2xl font-black italic uppercase tracking-tight">Geworbene Kunden</h3>
+              <div className="bg-black/40 px-4 py-2 rounded-full border border-white/5 flex items-center gap-2 shadow-inner">
+                <Users size={16} className="text-gray-500" />
+                <span className="text-sm font-black text-[#d4e137]">{customers.length}</span>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {customers.length === 0 ? (
+                <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[2.5rem]">
+                  <p className="text-gray-600 font-bold uppercase tracking-widest text-xs italic">Noch keine Kunden registriert</p>
+                </div>
+              ) : (
+                customers.map((c: any) => (
+                  <div key={c.id} className="p-6 bg-black/40 rounded-[2rem] border border-white/5 flex justify-between items-center group hover:border-white/20 transition-all">
+                    <div className="text-left">
+                      <p className="font-black text-lg tracking-tight group-hover:text-[#d4e137] transition-colors uppercase italic">{c.full_name}</p>
+                      <p className="text-[10px] text-gray-500 font-mono mt-1 uppercase font-bold tracking-widest">{c.email}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[#d4e137] font-black italic text-xl leading-none">{c.commission_earned} €</p>
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500 italic mt-2 block">Status: {c.commission_status}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
