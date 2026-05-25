@@ -117,7 +117,7 @@ function PromotionContent() {
                 onClick={() => setCurrentStep(2)}
                 className="absolute bottom-10 bg-[#d4e137] px-10 py-4 rounded-full text-black font-black uppercase italic shadow-2xl hover:scale-105 transition-transform"
               >
-                Jetzt prüfen
+                Jetzt anmelden!
               </button>
             </div>
           ) : (
@@ -154,8 +154,11 @@ function PromotionContent() {
           <CheckCircle2 className="text-[#d4e137] mx-auto mb-6" size={60} />
           <h2 className="text-4xl font-black uppercase italic mb-6">Deine <span className="text-[#d4e137]">Vorteile</span></h2>
           <ul className="text-left space-y-4 mb-10">
-            <li className="bg-white/5 p-4 rounded-2xl border border-white/10 font-bold uppercase text-xs">✓ 0€ Investitionskosten</li>
-            <li className="bg-white/5 p-4 rounded-2xl border border-white/10 font-bold uppercase text-xs">✓ Staatliche Förderung</li>
+            <li className="bg-white/5 p-4 rounded-2xl border border-white/10 font-bold uppercase text-xs">✓ Weniger Kosten</li>
+            <li className="bg-white/5 p-4 rounded-2xl border border-white/10 font-bold uppercase text-xs">✓ Versicherung inklusive</li>
+            <li className="bg-white/5 p-4 rounded-2xl border border-white/10 font-bold uppercase text-xs">✓⁠Kostenloses Trikot⁠</li>
+            <li className="bg-white/5 p-4 rounded-2xl border border-white/10 font-bold uppercase text-xs">✓Mehr Freiheit & Mobilitat⁠</li>
+
           </ul>
           <button onClick={() => setCurrentStep(3)} className="w-full py-5 bg-white text-black font-black rounded-2xl uppercase flex justify-between px-8 items-center">
             Weiter <ChevronRight />
@@ -169,7 +172,7 @@ function PromotionContent() {
           <div className="bg-[#d4e137] p-8 rounded-[2rem] text-black shadow-2xl mb-8">
             <Gift className="mx-auto mb-2" size={40} />
             <h2 className="text-2xl font-black uppercase italic tracking-tighter">FAST FERTIG!</h2>
-            <p className="font-bold text-xs mt-2 uppercase italic">Bitte füllen Sie Ihre Datos aus.</p>
+            <p className="font-bold text-xs mt-2 uppercase italic">Jetzt Ihre Daten eingeben.</p>
           </div>
           <form onSubmit={handleSubmitForm} className="space-y-4 text-left">
             <input type="text" placeholder="Vollständiger Name" required value={fullName} onChange={e => setFullName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-[#d4e137]" />
