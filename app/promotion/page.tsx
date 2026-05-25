@@ -156,8 +156,8 @@ function PromotionContent() {
           <ul className="text-left space-y-4 mb-10">
             <li className="bg-white/5 p-4 rounded-2xl border border-white/10 font-bold uppercase text-xs">✓ Weniger Kosten</li>
             <li className="bg-white/5 p-4 rounded-2xl border border-white/10 font-bold uppercase text-xs">✓ Versicherung inklusive</li>
-            <li className="bg-white/5 p-4 rounded-2xl border border-white/10 font-bold uppercase text-xs">✓⁠Kostenloses Trikot⁠</li>
-            <li className="bg-white/5 p-4 rounded-2xl border border-white/10 font-bold uppercase text-xs">✓Mehr Freiheit & Mobilitat⁠</li>
+            <li className="bg-white/5 p-4 rounded-2xl border border-white/10 font-bold uppercase text-xs">✓ ⁠Kostenloses Trikot⁠</li>
+            <li className="bg-white/5 p-4 rounded-2xl border border-white/10 font-bold uppercase text-xs">✓ Mehr Freiheit & Mobilitat⁠</li>
 
           </ul>
           <button onClick={() => setCurrentStep(3)} className="w-full py-5 bg-white text-black font-black rounded-2xl uppercase flex justify-between px-8 items-center">
