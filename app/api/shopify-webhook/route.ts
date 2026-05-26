@@ -16,16 +16,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No se encontró el email del cliente en la orden' }, { status: 400 });
     }
 
-    // 2. Calcular la comisión (Por ejemplo, el 10% del valor de la orden)
-    // Puedes cambiar el 0.10 por el porcentaje real que manejas con José
+    // 2. Calcular la comisión (10% del valor de la orden)
     const commission = totalOrder * 0.10;
 
-    // 3. Buscar al cliente en tu Supabase por su email y actualizar la comisión
+    // 3. Buscar al cliente en tu Supabase por su email y actualizar montos y estado
     const { data, error } = await supabase
       .from('customers')
       .update({
-        commission_earned: commission,
-        commission_status: 'Calculated' // O el estado inicial que prefieras (ej: 'Paid')
+        purchase_amount: totalOrder,      // ✅ CORREGIDO: Ahora sí guarda los 20€ (o el total de la compra)
+        commission_earned: commission,    // Guarda los 2€ de comisión
+        commission_status: 'pending'      // ✅ CORRECTO: 'pending' en minúsculas activa "Offen" y el botón de pago en el Admin
       })
       .eq('email', customerEmail);
 
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       throw error;
     }
 
-    return NextResponse.json({ success: true, message: 'Comisión registrada con éxito', customer: customerEmail });
+    return NextResponse.json({ success: true, message: 'Compra y comisión registradas con éxito', customer: customerEmail });
   } catch (err: any) {
     console.error('Error interno en el Webhook:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
