@@ -102,54 +102,31 @@ export default function AdminDashboard() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-   // ✅ REEMPLAZA TU BLOQUE DE GUARDADO ACTUAL POR ESTE CORREGIDO:
-if (isEditMode) {
-  const { error } = await supabase
-    .from('employees')
-    .update({
-      id_employee: formData.id_employee,
-      full_name: formData.full_name,
-      email: formData.email,
-      username: formData.username,
-      password: formData.password,
-      photo_url: formData.photo_url,
-      role: formData.role
-    })
-    .eq('id', selectedDbId);
-  if (error) { alert(error.message); return; }
-} else {
-  const { error } = await supabase
-    .from('employees')
-    .insert([{
-      id_employee: formData.id_employee,
-      full_name: formData.full_name,
-      email: formData.email,
-      username: formData.username,
-      password: formData.password,
-      photo_url: formData.photo_url,
-      role: formData.role
-    }]);
-  if (error) { alert(error.message); return; }
-  // 📧 DISPARADOR DE RESEND: Se ejecuta solo si la inserción en Supabase fue exitosa
-  try {
-    await fetch('/api/send-welcome', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: formData.email,
-        fullName: formData.full_name,
-        username: formData.username,
-        password: formData.password
-      })
-    });
-    console.log("Petición de correo enviada a Resend con éxito.");
-  } catch (mailErr) {
-    console.error("Error llamando a la API de correos:", mailErr);
-  }
-}
-  }
-setIsModalOpen(false);
-loadAdminData();
+    if (isEditMode) {
+      await supabase.from('employees').update(formData).eq('id', selectedDbId);
+    } else {
+      await supabase.from('employees').insert([formData]);
+      
+      // 📧 DISPARADOR DE RESEND: Solo al crear un empleado nuevo
+      try {
+        await fetch('/api/send-welcome', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email,
+            fullName: formData.full_name,
+            username: formData.username,
+            password: formData.password
+          })
+        });
+      } catch (err) {
+        console.error("Error al enviar el correo:", err);
+      }
+    }
+    setIsModalOpen(false);
+    resetForm();
+    loadAdminData();
+  };
 
   const resetForm = () => {
     setFormData({ id_employee: '', full_name: '', email: '', username: '', password: '', photo_url: '', role: 'worker' });
@@ -197,21 +174,21 @@ loadAdminData();
       </nav>
 
       <main className="max-w-7xl mx-auto p-4 md:p-10 space-y-8">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white/5 border border-white/10 p-5 rounded-[2rem]">
             <BarChart3 className="text-[#d4e137] mb-2" size={18} />
             <p className="text-gray-500 text-[8px] font-bold uppercase">Umsatz</p>
-            <h2 className="text-xl font-black italic">{customers.reduce((acc, c) => acc + (Number(c.purchase_amount) || 0), 0).toLocaleString()} €</h2>
+            <h2 className="text-xl font-black italic">{(customers || []).reduce((acc, c) => acc + (Number(c?.commission_earned) || 0), 0) * 10} €</h2>
           </div>
           <div className="bg-white/5 border border-white/10 p-5 rounded-[2rem]">
             <Clock className="text-orange-500 mb-2" size={18} />
             <p className="text-gray-500 text-[8px] font-bold uppercase">Offen</p>
-            <h2 className="text-xl font-black italic">{customers.filter(c => c.commission_status === 'pending').reduce((acc, c) => acc + (Number(c.commission_earned) || 0), 0).toLocaleString()} €</h2>
+            <h2 className="text-xl font-black italic">{(customers || []).filter(c => c?.commission_status === 'pending').reduce((acc, c) => acc + (Number(c?.commission_earned) || 0), 0).toLocaleString()} €</h2>
           </div>
           <div className="bg-white/5 border border-white/10 p-5 rounded-[2rem]">
             <Wallet className="text-blue-400 mb-2" size={18} />
             <p className="text-gray-500 text-[8px] font-bold uppercase">Bezahlt</p>
-            <h2 className="text-xl font-black italic">{customers.filter(c => c.commission_status === 'paid').reduce((acc, c) => acc + (Number(c.commission_earned) || 0), 0).toLocaleString()} €</h2>
+            <h2 className="text-xl font-black italic">{(customers || []).filter(c => c?.commission_status === 'paid').reduce((acc, c) => acc + (Number(c?.commission_earned) || 0), 0).toLocaleString()} €</h2>
           </div>
           <div className="bg-white/5 border border-white/10 p-5 rounded-[2rem]">
             <Users className="text-purple-400 mb-2" size={18} />
@@ -269,7 +246,11 @@ loadAdminData();
                 </div>
                 <div className="flex items-center gap-2 w-full md:w-auto justify-end">
                   <button onClick={() => { setFormData(emp); setSelectedDbId(emp.id); setIsEditMode(true); setIsModalOpen(true); }} className="p-3 bg-white/5 text-blue-400 rounded-xl"><Edit3 size={14} /></button>
-                  <button onClick={async () => { if(confirm(`Löschen?`)) { await supabase.from('employees').delete().eq('id', emp.id); loadAdminData(); } }} className="p-3 bg-red-500/10 text-red-500 rounded-xl"><Trash2 size={14} /></button>
+                  <button onClick={async () => { if(confirm(`Löschen?`)) 
+                    { await supabase.from('employees').delete().eq('id', emp.id); loadAdminData(); } }} 
+                    className="p-3 bg-red-500/10 text-red-500 rounded-xl"><Trash2 size={14} />
+                    
+                    </button>
                   <button onClick={() => router.push(`/dashboard/admin/employee/${emp.id_employee}`)} className="p-3 bg-white/5 text-gray-500 rounded-xl"><ChevronRight size={16} /></button>
                 </div>
               </div>
