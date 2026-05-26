@@ -26,10 +26,11 @@ export default function EmployeeProfile() {
 
   if (loading) return <div className="min-h-screen bg-[#05070a] text-white flex justify-center items-center">Laden...</div>;
 
-  // CORRECCIÓN DE TIPADO, MULTIPLICADOR Y PROTECCIÓN PARA VERCEL (BUILD SEGURO)
+  // CÁLCULOS CONFIGURADOS CON LOS ESTADOS REALES ('pending' y 'paid') Y PROTECCIÓN DE SEGURO
   const totalSales = (customers || []).reduce((acc: number, c: any) => acc + (Number(c?.commission_earned) || 0), 0) * 10;
   const pendingComm = (customers || []).filter(c => c?.commission_status === 'pending').reduce((acc: number, c: any) => acc + (Number(c?.commission_earned) || 0), 0);
-  const paidComm = (customers || []).filter(c => c?.commission_status === 'Calculated').reduce((acc: number, c: any) => acc + (Number(c?.commission_earned) || 0), 0);
+  const paidComm = (customers || []).filter(c => c?.commission_status === 'paid').reduce((acc: number, c: any) => acc + (Number(c?.commission_earned) || 0), 0);
+
   return (
     <div className="min-h-screen bg-[#05070a] text-white font-sans text-left">
       <nav className="border-b border-white/5 bg-black/50 backdrop-blur-xl h-20 flex items-center px-6 sticky top-0 z-50">
@@ -81,12 +82,13 @@ export default function EmployeeProfile() {
                   <p className="text-xs text-gray-500 font-mono">{c.email}</p>
                 </div>
                 <div className="text-right">
-                  <p className={`text-[#d4e137] font-black`}>{c.commission_earned} €</p>
-               <p className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
-  c.commission_status === 'pending' ? 'text-orange-500 bg-orange-500/5' : 'text-[#d4e137] bg-[#d4e137]/5'
-}`}>
-  {c.commission_status === 'pending' ? 'Offen' : 'Bezahlt'}
-</p>
+                  <p className="text-[#d4e137] font-black">{c.commission_earned} €</p>
+                  {/* ✅ TRADUCCIÓN PERFECTA Y BLINDADA DE ESTADOS */}
+                  <p className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded inline-block ${
+                    c.commission_status === 'paid' ? 'text-[#d4e137] bg-[#d4e137]/5' : 'text-orange-500 bg-orange-500/5'
+                  }`}>
+                    {c.commission_status === 'paid' ? 'Bezahlt' : 'Offen'}
+                  </p>
                 </div>
               </div>
             ))}
