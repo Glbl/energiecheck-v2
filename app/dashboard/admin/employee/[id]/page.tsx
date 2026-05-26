@@ -82,7 +82,11 @@ export default function EmployeeProfile() {
                 </div>
                 <div className="text-right">
                   <p className={`text-[#d4e137] font-black`}>{c.commission_earned} €</p>
-                  <p className="text-[10px] uppercase font-bold text-gray-600">{c.commission_status}</p>
+               <p className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
+  c.commission_status === 'pending' ? 'text-orange-500 bg-orange-500/5' : 'text-[#d4e137] bg-[#d4e137]/5'
+}`}>
+  {c.commission_status === 'pending' ? 'Offen' : 'Bezahlt'}
+</p>
                 </div>
               </div>
             ))}

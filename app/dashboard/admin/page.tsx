@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { 
   Users, Wallet, BarChart3, Clock, LayoutDashboard, 
-  LogOut, Search, ChevronRight, Trash2, UserPlus, X, Edit3, Activity, Upload 
+  LogOut, Search, ChevronRight, Trash2, UserPlus, X, Edit3, Activity, Upload, CheckSquare
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -48,44 +48,28 @@ export default function AdminDashboard() {
     } catch (err) { console.error(err); } finally { setLoading(false); }
   }
 
-  // FUNCIÓN PARA ACTUALIZAR IMAGEN DE LANDING (GLOBAL)
   const handleUploadLanding = async () => {
-    if (!promoImage) {
-      alert("Selecciona una imagen primero");
-      return;
-    }
-
+    if (!promoImage) { alert("Selecciona una imagen primero"); return; }
     setUploading(true);
     const fileExt = promoImage.name.split('.').pop();
     const fileName = `landing_${Date.now()}.${fileExt}`;
 
     try {
-      // 1. Subir al Storage (Bucket 'promotions')
-      const { error: storageError } = await supabase.storage
-        .from('promotions')
-        .upload(fileName, promoImage);
-
+      const { error: storageError } = await supabase.storage.from('promotions').upload(fileName, promoImage);
       if (storageError) throw storageError;
-
-      // 2. Desactivar promos anteriores
       await supabase.from('promotions').update({ is_active: false }).eq('is_active', true);
 
-      // 3. Insertar nueva promo activa
-      const { error: dbError } = await supabase.from('promotions').insert([{ 
-        title: "Nueva Promo Global", 
-        image_url: fileName,
-        is_active: true
-      }]);
+// Desestructuramos 'error' de Supabase y lo renombramos a 'dbError' para que no choque con 'storageError'
+const { error: dbError } = await supabase.from('promotions').insert([{ 
+  title: "Nueva Promo Global", 
+  image_url: fileName, 
+  is_active: true
+}]);
 
-      if (dbError) throw dbError;
-
+if (dbError) throw dbError;
       alert("Landing actualizada para todos los trabajadores");
       setPromoImage(null);
-    } catch (error: any) {
-      alert("Error: " + error.message);
-    } finally {
-      setUploading(false);
-    }
+    } catch (error: any) { alert("Error: " + error.message); } finally { setUploading(false); }
   };
 
   const handleFileUpload = async (e: any) => {
@@ -106,8 +90,6 @@ export default function AdminDashboard() {
       await supabase.from('employees').update(formData).eq('id', selectedDbId);
     } else {
       await supabase.from('employees').insert([formData]);
-      
-      // 📧 DISPARADOR DE RESEND: Solo al crear un empleado nuevo
       try {
         await fetch('/api/send-welcome', {
           method: 'POST',
@@ -119,13 +101,28 @@ export default function AdminDashboard() {
             password: formData.password
           })
         });
-      } catch (err) {
-        console.error("Error al enviar el correo:", err);
-      }
+      } catch (err) { console.error("Error al enviar correo:", err); }
     }
     setIsModalOpen(false);
     resetForm();
     loadAdminData();
+  };
+
+  // ⚡ FUNCIÓN PARA MARCAR TODO EL SALDO DE UN TRABAJADOR COMO PAGADO
+  const handleMarkAsPaid = async (workerId: string) => {
+    if (!confirm(`Möchtest du alle offenen Provisionen für diesen Mitarbeiter als bezahlt markieren?`)) return;
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .update({ commission_status: 'paid' })
+        .eq('worker_id', workerId)
+        .eq('commission_status', 'pending');
+      
+      if (error) throw error;
+      loadAdminData();
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    }
   };
 
   const resetForm = () => {
@@ -134,6 +131,11 @@ export default function AdminDashboard() {
   };
 
   if (loading) return <div className="min-h-screen bg-[#05070a] text-white flex items-center justify-center font-black italic">LADEN...</div>;
+
+  // CÁLCULOS GLOBALES PROTEGIDOS PARA EL RECAUDO DE TARJETAS
+  const totalUmsatz = (customers || []).reduce((acc, c) => acc + (Number(c?.commission_earned) || 0), 0) * 10;
+  const pendingComm = (customers || []).filter(c => c?.commission_status === 'pending').reduce((acc, c) => acc + (Number(c?.commission_earned) || 0), 0);
+  const paidComm = (customers || []).filter(c => c?.commission_status === 'paid').reduce((acc, c) => acc + (Number(c?.commission_earned) || 0), 0);
 
   return (
     <div className="min-h-screen bg-[#05070a] text-white font-sans text-left pb-20">
@@ -174,21 +176,21 @@ export default function AdminDashboard() {
       </nav>
 
       <main className="max-w-7xl mx-auto p-4 md:p-10 space-y-8">
-       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white/5 border border-white/10 p-5 rounded-[2rem]">
             <BarChart3 className="text-[#d4e137] mb-2" size={18} />
             <p className="text-gray-500 text-[8px] font-bold uppercase">Umsatz</p>
-            <h2 className="text-xl font-black italic">{(customers || []).reduce((acc, c) => acc + (Number(c?.commission_earned) || 0), 0) * 10} €</h2>
+            <h2 className="text-xl font-black italic">{totalUmsatz.toLocaleString('de-DE')} €</h2>
           </div>
           <div className="bg-white/5 border border-white/10 p-5 rounded-[2rem]">
             <Clock className="text-orange-500 mb-2" size={18} />
             <p className="text-gray-500 text-[8px] font-bold uppercase">Offen</p>
-            <h2 className="text-xl font-black italic">{(customers || []).filter(c => c?.commission_status === 'pending').reduce((acc, c) => acc + (Number(c?.commission_earned) || 0), 0).toLocaleString()} €</h2>
+            <h2 className="text-xl font-black italic">{pendingComm.toLocaleString('de-DE')} €</h2>
           </div>
           <div className="bg-white/5 border border-white/10 p-5 rounded-[2rem]">
             <Wallet className="text-blue-400 mb-2" size={18} />
             <p className="text-gray-500 text-[8px] font-bold uppercase">Bezahlt</p>
-            <h2 className="text-xl font-black italic">{(customers || []).filter(c => c?.commission_status === 'paid').reduce((acc, c) => acc + (Number(c?.commission_earned) || 0), 0).toLocaleString()} €</h2>
+            <h2 className="text-xl font-black italic">{paidComm.toLocaleString('de-DE')} €</h2>
           </div>
           <div className="bg-white/5 border border-white/10 p-5 rounded-[2rem]">
             <Users className="text-purple-400 mb-2" size={18} />
@@ -209,7 +211,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* SECCIÓN ACTUALIZAR LANDING */}
         <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10">
           <h3 className="text-lg font-black italic uppercase mb-4 text-orange-500">Landingpage-Bild aktualisieren</h3>
           <div className="flex flex-col md:flex-row items-center gap-4">
@@ -236,25 +237,38 @@ export default function AdminDashboard() {
           </div>
 
           <div className="grid grid-cols-1 gap-3">
-            {employees.filter(e => e.full_name.toLowerCase().includes(searchTerm.toLowerCase())).map((emp) => (
-              <div key={emp.id} className="p-4 bg-black/40 rounded-[2rem] border border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 group transition-all">
-                <div className="flex items-center gap-4 w-full cursor-pointer" onClick={() => router.push(`/dashboard/admin/employee/${emp.id_employee}`)}>
-                  <div className="w-12 h-12 rounded-xl bg-orange-600 flex-shrink-0 overflow-hidden border border-white/10">
-                    {emp.photo_url ? <img src={STORAGE_URL + emp.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-black italic">{emp.full_name[0]}</div>}
+            {employees.filter(e => e.full_name.toLowerCase().includes(searchTerm.toLowerCase())).map((emp) => {
+              // Calcular comisiones pendientes específicas de este trabajador para el botón dinámico
+              const empPending = customers.filter(c => c.worker_id === emp.id_employee && c.commission_status === 'pending').reduce((acc, c) => acc + (Number(c.commission_earned) || 0), 0);
+
+              return (
+                <div key={emp.id} className="p-4 bg-black/40 rounded-[2rem] border border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 group transition-all">
+                  <div className="flex items-center gap-4 w-full cursor-pointer" onClick={() => router.push(`/dashboard/admin/employee/${emp.id_employee}`)}>
+                    <div className="w-12 h-12 rounded-xl bg-orange-600 flex-shrink-0 overflow-hidden border border-white/10">
+                      {emp.photo_url ? <img src={STORAGE_URL + emp.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-black italic">{emp.full_name[0]}</div>}
+                    </div>
+                    <div className="text-left">
+                      <p className="font-black text-sm uppercase italic group-hover:text-orange-500 transition-colors">{emp.full_name}</p>
+                      <p className="text-[9px] text-gray-500 font-mono">Worker ID: {emp.id_employee}</p>
+                    </div>
                   </div>
-                  <div className="text-left"><p className="font-black text-sm uppercase italic group-hover:text-orange-500 transition-colors">{emp.full_name}</p><p className="text-[9px] text-gray-500 font-mono">{emp.id_employee}</p></div>
+                  <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                    {/* 💰 BOTÓN DE PAGO DINÁMICO */}
+                    {empPending > 0 && (
+                      <button 
+                        onClick={() => handleMarkAsPaid(emp.id_employee)} 
+                        className="flex items-center gap-1 px-3 py-2 bg-orange-500 text-black font-bold uppercase text-[9px] rounded-xl hover:bg-orange-400 transition-all shadow-[0_0_15px_rgba(249,115,22,0.2)]"
+                      >
+                        <CheckSquare size={12} /> {empPending} € Bezahlen
+                      </button>
+                    )}
+                    <button onClick={() => { setFormData(emp); setSelectedDbId(emp.id); setIsEditMode(true); setIsModalOpen(true); }} className="p-3 bg-white/5 text-blue-400 rounded-xl"><Edit3 size={14} /></button>
+                    <button onClick={async () => { if(confirm(`Löschen?`)) { await supabase.from('employees').delete().eq('id', emp.id); loadAdminData(); } }} className="p-3 bg-red-500/10 text-red-500 rounded-xl"><Trash2 size={14} /></button>
+                    <button onClick={() => router.push(`/dashboard/admin/employee/${emp.id_employee}`)} className="p-3 bg-white/5 text-gray-500 rounded-xl"><ChevronRight size={16} /></button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-                  <button onClick={() => { setFormData(emp); setSelectedDbId(emp.id); setIsEditMode(true); setIsModalOpen(true); }} className="p-3 bg-white/5 text-blue-400 rounded-xl"><Edit3 size={14} /></button>
-                  <button onClick={async () => { if(confirm(`Löschen?`)) 
-                    { await supabase.from('employees').delete().eq('id', emp.id); loadAdminData(); } }} 
-                    className="p-3 bg-red-500/10 text-red-500 rounded-xl"><Trash2 size={14} />
-                    
-                    </button>
-                  <button onClick={() => router.push(`/dashboard/admin/employee/${emp.id_employee}`)} className="p-3 bg-white/5 text-gray-500 rounded-xl"><ChevronRight size={16} /></button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </main>

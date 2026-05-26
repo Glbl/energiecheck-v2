@@ -123,15 +123,15 @@ function PromotionContent() {
           ) : (
             /* DISEÑO DE BACKUP (SOLO SI NO HAY IMAGEN ACTIVA EN SUPABASE) */
             <>
-              <div className="pt-10 pb-4">
+            {/*   <div className="pt-10 pb-4">
                 <h2 className="text-[#d4e137] text-4xl font-black italic tracking-tighter uppercase leading-none"></h2>
                 <p className="text-white text-3xl font-black mt-1">+</p>
-              </div>
+              </div>*/}
               
-              <div className="relative w-full mt-2 flex justify-center">
+             {/* <div className="relative w-full mt-2 flex justify-center">
                 <div className="absolute bottom-6 w-[80%] h-[15px] bg-[#d4e137] rounded-[100%] blur-[25px] opacity-30"></div>
                 <img src="" alt="Bundle" className="relative z-10 w-[90%] h-auto drop-shadow-2xl" />
-              </div>
+              </div>*/}
 
              {/*  <div className="mt-8 space-y-1">
                 <h1 className="text-4xl font-black uppercase italic tracking-tighter"> <span className="text-[#d4e137]">FÖRDERUNG</span></h1>
@@ -192,11 +192,11 @@ export default function PromotionPage() {
   return (
     <div className="min-h-screen bg-[#05070a] text-white font-sans overflow-x-hidden relative">
       <div className="absolute inset-0 z-0 flex justify-center items-center opacity-30">
-        <img 
+       {/*  <img 
           src="/germany-bg-glow.webp" 
           alt="DE Map" 
           className="w-full max-w-2xl h-auto object-contain" 
-        />
+        />*/}
       </div>
       <Suspense fallback={<div className="text-white text-center pt-20 font-black italic">LADEN...</div>}>
         <PromotionContent />
