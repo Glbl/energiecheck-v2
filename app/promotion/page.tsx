@@ -124,25 +124,25 @@ function PromotionContent() {
             /* DISEÑO DE BACKUP (SOLO SI NO HAY IMAGEN ACTIVA EN SUPABASE) */
             <>
               <div className="pt-10 pb-4">
-                <h2 className="text-[#d4e137] text-4xl font-black italic tracking-tighter uppercase leading-none">500€ sofort CASH</h2>
+                <h2 className="text-[#d4e137] text-4xl font-black italic tracking-tighter uppercase leading-none"></h2>
                 <p className="text-white text-3xl font-black mt-1">+</p>
               </div>
               
               <div className="relative w-full mt-2 flex justify-center">
                 <div className="absolute bottom-6 w-[80%] h-[15px] bg-[#d4e137] rounded-[100%] blur-[25px] opacity-30"></div>
-                <img src="/produkte-bundle.webp" alt="Bundle" className="relative z-10 w-[90%] h-auto drop-shadow-2xl" />
+                <img src="" alt="Bundle" className="relative z-10 w-[90%] h-auto drop-shadow-2xl" />
               </div>
 
-              <div className="mt-8 space-y-1">
-                <h1 className="text-4xl font-black uppercase italic tracking-tighter">ENERGIE <span className="text-[#d4e137]">FÖRDERUNG</span></h1>
-                <h1 className="text-4xl font-black uppercase italic tracking-tighter">sichern</h1>
-              </div>
+             {/*  <div className="mt-8 space-y-1">
+                <h1 className="text-4xl font-black uppercase italic tracking-tighter"> <span className="text-[#d4e137]">FÖRDERUNG</span></h1>
+                <h1 className="text-4xl font-black uppercase italic tracking-tighter"></h1>
+              </div>*/}
 
-              <div className="w-full max-w-xs mt-10 mx-auto">
+              {/*<div className="w-full max-w-xs mt-10 mx-auto">
                 <button onClick={() => setCurrentStep(2)} className="w-full py-5 bg-[#d4e137] text-black font-black text-xl rounded-full uppercase italic">
                   Jetzt Tarif prüfen
                 </button>
-              </div>
+              </div>*/}
             </>
           )}
         </div>

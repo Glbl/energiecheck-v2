@@ -102,15 +102,54 @@ export default function AdminDashboard() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isEditMode) {
-      await supabase.from('employees').update(formData).eq('id', selectedDbId);
-    } else {
-      await supabase.from('employees').insert([formData]);
-    }
-    setIsModalOpen(false);
-    resetForm();
-    loadAdminData();
-  };
+   // ✅ REEMPLAZA TU BLOQUE DE GUARDADO ACTUAL POR ESTE CORREGIDO:
+if (isEditMode) {
+  const { error } = await supabase
+    .from('employees')
+    .update({
+      id_employee: formData.id_employee,
+      full_name: formData.full_name,
+      email: formData.email,
+      username: formData.username,
+      password: formData.password,
+      photo_url: formData.photo_url,
+      role: formData.role
+    })
+    .eq('id', selectedDbId);
+  if (error) { alert(error.message); return; }
+} else {
+  const { error } = await supabase
+    .from('employees')
+    .insert([{
+      id_employee: formData.id_employee,
+      full_name: formData.full_name,
+      email: formData.email,
+      username: formData.username,
+      password: formData.password,
+      photo_url: formData.photo_url,
+      role: formData.role
+    }]);
+  if (error) { alert(error.message); return; }
+  // 📧 DISPARADOR DE RESEND: Se ejecuta solo si la inserción en Supabase fue exitosa
+  try {
+    await fetch('/api/send-welcome', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: formData.email,
+        fullName: formData.full_name,
+        username: formData.username,
+        password: formData.password
+      })
+    });
+    console.log("Petición de correo enviada a Resend con éxito.");
+  } catch (mailErr) {
+    console.error("Error llamando a la API de correos:", mailErr);
+  }
+}
+  }
+setIsModalOpen(false);
+loadAdminData();
 
   const resetForm = () => {
     setFormData({ id_employee: '', full_name: '', email: '', username: '', password: '', photo_url: '', role: 'worker' });
