@@ -9,7 +9,7 @@ import {
 
 export default function AdminDashboard() {
   const [employees, setEmployees] = useState<any[]>([]);
-  const [customers, setCustomers] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [funnelLogs, setFunnelLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -31,6 +31,7 @@ export default function AdminDashboard() {
     if (userRole !== 'admin') { router.push('/login'); return; }
     loadAdminData();
     
+    // Suscripción Realtime para actualizaciones en vivo de la navegación del funnel
     const channel = supabase.channel('admin_live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_funnel_logs' }, () => loadAdminData())
       .subscribe();
@@ -40,12 +41,17 @@ export default function AdminDashboard() {
   async function loadAdminData() {
     try {
       const { data: emps } = await supabase.from('employees').select('*').order('full_name');
-      const { data: custs } = await supabase.from('customers').select('*');
+      const { data: ords } = await supabase.from('orders').select('*');
       const { data: logs } = await supabase.from('user_funnel_logs').select('*').order('created_at', { ascending: false }).limit(6);
+      
       if (emps) setEmployees(emps);
-      if (custs) setCustomers(custs);
+      if (ords) setOrders(ords);
       if (logs) setFunnelLogs(logs);
-    } catch (err) { console.error(err); } finally { setLoading(false); }
+    } catch (err) { 
+      console.error("Error cargando datos del administrador:", err); 
+    } finally { 
+      setLoading(false); 
+    }
   }
 
   const handleUploadLanding = async () => {
@@ -57,19 +63,23 @@ export default function AdminDashboard() {
     try {
       const { error: storageError } = await supabase.storage.from('promotions').upload(fileName, promoImage);
       if (storageError) throw storageError;
+      
       await supabase.from('promotions').update({ is_active: false }).eq('is_active', true);
 
-// Desestructuramos 'error' de Supabase y lo renombramos a 'dbError' para que no choque con 'storageError'
-const { error: dbError } = await supabase.from('promotions').insert([{ 
-  title: "Nueva Promo Global", 
-  image_url: fileName, 
-  is_active: true
-}]);
+      const { error: dbError } = await supabase.from('promotions').insert([{ 
+        title: "Nueva Promo Global", 
+        image_url: fileName, 
+        is_active: true
+      }]);
 
-if (dbError) throw dbError;
+      if (dbError) throw dbError;
       alert("Landing actualizada para todos los trabajadores");
       setPromoImage(null);
-    } catch (error: any) { alert("Error: " + error.message); } finally { setUploading(false); }
+    } catch (error: any) { 
+      alert("Error: " + error.message); 
+    } finally { 
+      setUploading(false); 
+    }
   };
 
   const handleFileUpload = async (e: any) => {
@@ -81,7 +91,11 @@ if (dbError) throw dbError;
       const { error } = await supabase.storage.from('avatars').upload(fileName, file);
       if (error) throw error;
       setFormData({ ...formData, photo_url: fileName });
-    } catch (err: any) { alert("Upload error: " + err.message); } finally { setUploading(false); }
+    } catch (err: any) { 
+      alert("Upload error: " + err.message); 
+    } finally { 
+      setUploading(false); 
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -101,27 +115,29 @@ if (dbError) throw dbError;
             password: formData.password
           })
         });
-      } catch (err) { console.error("Error al enviar correo:", err); }
+      } catch (err) { 
+        console.error("Error al enviar correo de bienvenida:", err); 
+      }
     }
     setIsModalOpen(false);
     resetForm();
     loadAdminData();
   };
 
-  // ⚡ FUNCIÓN PARA MARCAR TODO EL SALDO DE UN TRABAJADOR COMO PAGADO
+  // ⚡ FUNCIÓN PARA MARCAR TODAS LAS COMISIONES PENDIENTES DE UN TRABAJADOR COMO PAGADAS
   const handleMarkAsPaid = async (workerId: string) => {
     if (!confirm(`Möchtest du alle offenen Provisionen für diesen Mitarbeiter als bezahlt markieren?`)) return;
     try {
       const { error } = await supabase
-        .from('customers')
+        .from('orders')
         .update({ commission_status: 'paid' })
         .eq('worker_id', workerId)
         .eq('commission_status', 'pending');
       
       if (error) throw error;
-      loadAdminData();
+      loadAdminData(); // Recargar datos para actualizar balances y remover el botón
     } catch (err: any) {
-      alert("Error: " + err.message);
+      alert("Error al procesar el pago: " + err.message);
     }
   };
 
@@ -132,10 +148,10 @@ if (dbError) throw dbError;
 
   if (loading) return <div className="min-h-screen bg-[#05070a] text-white flex items-center justify-center font-black italic">LADEN...</div>;
 
-  // CÁLCULOS GLOBALES PROTEGIDOS PARA EL RECAUDO DE TARJETAS
-  const totalUmsatz = (customers || []).reduce((acc, c) => acc + (Number(c?.commission_earned) || 0), 0) * 10;
-  const pendingComm = (customers || []).filter(c => c?.commission_status === 'pending').reduce((acc, c) => acc + (Number(c?.commission_earned) || 0), 0);
-  const paidComm = (customers || []).filter(c => c?.commission_status === 'paid').reduce((acc, c) => acc + (Number(c?.commission_earned) || 0), 0);
+  // CÁLCULOS GLOBALES DE FINANZAS DERIVADOS DE LA TABLA ORDERS (PROTEGIDOS CONTRA ARRAYS VACÍOS EN BUILD)
+  const totalUmsatz = (orders || []).reduce((acc, o) => acc + (Number(o?.purchase_amount) || 0), 0);
+  const pendingComm = (orders || []).filter(o => o?.commission_status === 'pending').reduce((acc, o) => acc + (Number(o?.commission_earned) || 0), 0);
+  const paidComm = (orders || []).filter(o => o?.commission_status === 'paid').reduce((acc, o) => acc + (Number(o?.commission_earned) || 0), 0);
 
   return (
     <div className="min-h-screen bg-[#05070a] text-white font-sans text-left pb-20">
@@ -176,6 +192,7 @@ if (dbError) throw dbError;
       </nav>
 
       <main className="max-w-7xl mx-auto p-4 md:p-10 space-y-8">
+        {/* TARJETAS DE MÉTRICAS FINANCIERAS */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white/5 border border-white/10 p-5 rounded-[2rem]">
             <BarChart3 className="text-[#d4e137] mb-2" size={18} />
@@ -211,6 +228,7 @@ if (dbError) throw dbError;
           </div>
         </div>
 
+        {/* SECCIÓN ACTUALIZAR IMAGEN DE LA LANDING GLOBAL */}
         <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10">
           <h3 className="text-lg font-black italic uppercase mb-4 text-orange-500">Landingpage-Bild aktualisieren</h3>
           <div className="flex flex-col md:flex-row items-center gap-4">
@@ -230,16 +248,20 @@ if (dbError) throw dbError;
           </div>
         </div>
 
+        {/* LISTADO DE TRABAJADORES CON BALANCES INDIVIDUALES */}
         <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
-            <div className="flex items-center gap-4 w-full"><h3 className="text-xl font-black italic uppercase">Mitarbeiter</h3><button onClick={() => { resetForm(); setIsModalOpen(true); }} className="bg-[#d4e137] text-black p-2 rounded-full"><UserPlus size={18} /></button></div>
+            <div className="flex items-center gap-4 w-full">
+              <h3 className="text-xl font-black italic uppercase">Mitarbeiter</h3>
+              <button onClick={() => { resetForm(); setIsModalOpen(true); }} className="bg-[#d4e137] text-black p-2 rounded-full"><UserPlus size={18} /></button>
+            </div>
             <input type="text" placeholder="Suchen..." className="w-full md:w-64 bg-black/20 border border-white/5 rounded-xl py-3 px-4 text-xs outline-none" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
 
           <div className="grid grid-cols-1 gap-3">
             {employees.filter(e => e.full_name.toLowerCase().includes(searchTerm.toLowerCase())).map((emp) => {
-              // Calcular comisiones pendientes específicas de este trabajador para el botón dinámico
-              const empPending = customers.filter(c => c.worker_id === emp.id_employee && c.commission_status === 'pending').reduce((acc, c) => acc + (Number(c.commission_earned) || 0), 0);
+              // Filtrar y sumar las comisiones pendientes ('pending') de este trabajador desde la tabla orders
+              const empPending = (orders || []).filter(o => o.worker_id === emp.id_employee && o.commission_status === 'pending').reduce((acc, o) => acc + (Number(o.commission_earned) || 0), 0);
 
               return (
                 <div key={emp.id} className="p-4 bg-black/40 rounded-[2rem] border border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 group transition-all">
@@ -253,15 +275,17 @@ if (dbError) throw dbError;
                     </div>
                   </div>
                   <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-                    {/* 💰 BOTÓN DE PAGO DINÁMICO */}
+                    
+                    {/* 💰 BOTÓN DE PAGO OPERATIVO EN VIVO */}
                     {empPending > 0 && (
                       <button 
                         onClick={() => handleMarkAsPaid(emp.id_employee)} 
                         className="flex items-center gap-1 px-3 py-2 bg-orange-500 text-black font-bold uppercase text-[9px] rounded-xl hover:bg-orange-400 transition-all shadow-[0_0_15px_rgba(249,115,22,0.2)]"
                       >
-                        <CheckSquare size={12} /> {empPending} € Bezahlen
+                        <CheckSquare size={12} /> {empPending.toLocaleString('de-DE')} € Bezahlen
                       </button>
                     )}
+
                     <button onClick={() => { setFormData(emp); setSelectedDbId(emp.id); setIsEditMode(true); setIsModalOpen(true); }} className="p-3 bg-white/5 text-blue-400 rounded-xl"><Edit3 size={14} /></button>
                     <button onClick={async () => { if(confirm(`Löschen?`)) { await supabase.from('employees').delete().eq('id', emp.id); loadAdminData(); } }} className="p-3 bg-red-500/10 text-red-500 rounded-xl"><Trash2 size={14} /></button>
                     <button onClick={() => router.push(`/dashboard/admin/employee/${emp.id_employee}`)} className="p-3 bg-white/5 text-gray-500 rounded-xl"><ChevronRight size={16} /></button>
