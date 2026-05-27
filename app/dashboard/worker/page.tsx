@@ -15,6 +15,7 @@ import { QRCodeSVG } from 'qrcode.react';
 
 export default function WorkerDashboard() {
   const [employee, setEmployee] = useState<any>(null);
+  const [orders, setOrders] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [activeLanding, setActiveLanding] = useState('');
   const [stats, setStats] = useState({ sales: 0, comm: 0 });
@@ -55,17 +56,25 @@ export default function WorkerDashboard() {
           .single();
         if (promoData) setActiveLanding(promoData.image_url);
 
-        // 3. Cargar Clientes y Stats
+        // 3. Cargar Leads / Clientes Registrados iniciales (Para contar tus referidos)
         const { data: custData } = await supabase
           .from('customers')
           .select('*')
-          .eq('worker_id', workerId)
-          .order('registration_date', { ascending: false });
+          .eq('worker_id', workerId);
+        if (custData) setCustomers(custData);
 
-        if (custData) {
-          setCustomers(custData);
-          const totalComm = custData.reduce((acc, c) => acc + (Number(c.commission_earned) || 0), 0);
-          setStats({ sales: custData.length, comm: totalComm });
+        // 4. Cargar Órdenes y Comisiones reales desde la tabla 'orders'
+        const { data: ordsData } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('worker_id', workerId)
+          .order('created_at', { ascending: false });
+
+        if (ordsData) {
+          setOrders(ordsData);
+          // Sumar todas las comisiones acumuladas del trabajador
+          const totalComm = ordsData.reduce((acc, o) => acc + (Number(o.commission_earned) || 0), 0);
+          setStats({ sales: ordsData.length, comm: totalComm });
         }
       } catch (err) {
         console.error("Error cargando dashboard:", err);
@@ -121,9 +130,8 @@ export default function WorkerDashboard() {
       <main className="max-w-7xl mx-auto p-6 md:p-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         <div className="flex flex-col gap-6">
-          {/* SECCIÓN DE LA LANDING DINÁMICA CON QR */}
+          {/* SECCIÓN DE LA LANDING DINÁMICA CON QR AJUSTADO */}
           <div className="relative w-full rounded-[2.5rem] overflow-hidden border border-white/10 bg-black aspect-[3/4] shadow-2xl group">
-            {/* Imagen que sube José */}
             {activeLanding ? (
               <img 
                 src={`${STORAGE_URL}${activeLanding}`} 
@@ -137,23 +145,27 @@ export default function WorkerDashboard() {
               </div>
             )}
 
-            {/* Capa del QR sobre la imagen */}
+            {/* Capa del QR sobre la imagen con control de carga seguro */}
             <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-gradient-to-t from-black via-transparent to-transparent">
               <div className="p-4 bg-white rounded-[2rem] shadow-[0_0_50px_rgba(212,225,55,0.3)] transform transition-transform hover:scale-105">
-               <QRCodeSVG 
-  value={promoLink} 
-  size={160} 
-  level="H" // Mantiene la máxima tolerancia de escaneo
-  imageSettings={{
-    src: "/energiecheck.png", // ✅ CORREGIDO: Apunta al archivo correcto en tu carpeta /public
-    height: 42,       // ✅ Ajustado: Un poco más grande para mejor legibilidad
-    width: 42,        // ✅ Ajustado: Proporción simétrica ideal
-    excavate: true    // Mantiene recortados los puntos traseros para un fondo limpio
-  }} 
-/>
+                {promoLink ? (
+                  <QRCodeSVG 
+                    value={promoLink} 
+                    size={160} 
+                    level="H" 
+                    imageSettings={{
+                      src: "/energiecheck.png", 
+                      height: 38,       
+                      width: 38,        
+                      excavate: true    
+                    }} 
+                  />
+                ) : (
+                  <div className="w-[160px] h-[160px] flex items-center justify-center text-black text-xs font-mono">Laden...</div>
+                )}
               </div>
               <div className="mt-8 text-center">
-                <p className="text-[10px] font-black uppercase text-[#d4e137] tracking-[0.3em] italic mb-2">Personalosierter QR</p>
+                <p className="text-[10px] font-black uppercase text-[#d4e137] tracking-[0.3em] italic mb-2">Personalisierter QR</p>
                 <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest leading-tight">
                   Scannen lassen, <br/>um Provision zu sichern
                 </p>
@@ -172,7 +184,7 @@ export default function WorkerDashboard() {
             </div>
           </div>
 
-          {/* COMISIONES */}
+          {/* COMISIONES TOTALES SUMADAS DESDE ORDERS */}
           <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] backdrop-blur-sm">
             <Wallet className="text-[#d4e137] mb-4" size={24} />
             <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest italic">Meine Provisionen</p>
@@ -180,35 +192,46 @@ export default function WorkerDashboard() {
           </div>
         </div>
 
-        {/* LISTA DE CLIENTES */}
+        {/* LISTA DE HISTORIAL DE COMPRAS (Muestra nombre real mediante Unión) */}
         <div className="lg:col-span-2">
           <div className="bg-white/5 border border-white/10 rounded-[3rem] p-8 md:p-10 min-h-full backdrop-blur-sm">
             <div className="flex justify-between items-center mb-10">
               <h3 className="text-2xl font-black italic uppercase tracking-tight">Geworbene Kunden</h3>
               <div className="bg-black/40 px-4 py-2 rounded-full border border-white/5 flex items-center gap-2 shadow-inner">
                 <Users size={16} className="text-gray-500" />
-                <span className="text-sm font-black text-[#d4e137]">{customers.length}</span>
+                <span className="text-sm font-black text-[#d4e137]">{orders.length}</span>
               </div>
             </div>
 
             <div className="space-y-4">
-              {customers.length === 0 ? (
+              {orders.length === 0 ? (
                 <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[2.5rem]">
                   <p className="text-gray-600 font-bold uppercase tracking-widest text-xs italic">Noch keine Kunden registriert</p>
                 </div>
               ) : (
-                customers.map((c: any) => (
-                  <div key={c.id} className="p-6 bg-black/40 rounded-[2rem] border border-white/5 flex justify-between items-center group hover:border-white/20 transition-all">
-                    <div className="text-left">
-                      <p className="font-black text-lg tracking-tight group-hover:text-[#d4e137] transition-colors uppercase italic">{c.full_name}</p>
-                      <p className="text-[10px] text-gray-500 font-mono mt-1 uppercase font-bold tracking-widest">{c.email}</p>
+                orders.map((o: any) => {
+                  // ✨ SOLUCIÓN DE UNIÓN: Buscar los datos del lead para extraer su Nombre y Apellido
+                  const matchedCustomer = (customers || []).find(c => c.email.toLowerCase() === o.customer_email.toLowerCase());
+                  const displayName = matchedCustomer ? matchedCustomer.full_name : "Gast-Kunde";
+
+                  return (
+                    <div key={o.id} className="p-6 bg-black/40 rounded-[2rem] border border-white/5 flex justify-between items-center group hover:border-white/20 transition-all">
+                      <div className="text-left">
+                        {/* ✅ Muestra el Nombre Real ("asd" en tu ejemplo) */}
+                        <p className="font-black text-lg tracking-tight group-hover:text-[#d4e137] transition-colors uppercase italic">{displayName}</p>
+                        <p className="text-[10px] text-gray-500 font-mono mt-1 uppercase font-bold tracking-widest">{o.customer_email}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[#d4e137] font-black italic text-xl leading-none">{Number(o.commission_earned).toLocaleString('de-DE')} €</p>
+                        <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded italic mt-2 block ${
+                          o.commission_status === 'paid' ? 'text-[#d4e137] bg-[#d4e137]/5' : 'text-orange-500 bg-orange-500/5'
+                        }`}>
+                          Status: {o.commission_status === 'paid' ? 'Bezahlt' : 'Offen'}
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-[#d4e137] font-black italic text-xl leading-none">{c.commission_earned} €</p>
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500 italic mt-2 block">Status: {c.commission_status}</span>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
