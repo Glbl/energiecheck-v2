@@ -18,7 +18,8 @@ export default function WorkerDashboard() {
   const [orders, setOrders] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [activeLanding, setActiveLanding] = useState('');
-  const [stats, setStats] = useState({ sales: 0, comm: 0 });
+  // Estado financiero optimizado y segmentado para reflejar el panel del admin
+  const [stats, setStats] = useState({ sales: 0, umsatz: 0, offen: 0, bezahlt: 0 });
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -56,14 +57,14 @@ export default function WorkerDashboard() {
           .single();
         if (promoData) setActiveLanding(promoData.image_url);
 
-        // 3. Cargar Leads / Clientes Registrados iniciales (Para contar tus referidos)
+        // 3. Cargar Leads / Clientes Registrados iniciales (Para la agenda de nombres)
         const { data: custData } = await supabase
           .from('customers')
           .select('*')
           .eq('worker_id', workerId);
         if (custData) setCustomers(custData);
 
-        // 4. Cargar Órdenes y Comisiones reales desde la tabla 'orders'
+        // 4. Cargar Órdenes y Comisiones reales desde la nueva tabla 'orders'
         const { data: ordsData } = await supabase
           .from('orders')
           .select('*')
@@ -72,9 +73,18 @@ export default function WorkerDashboard() {
 
         if (ordsData) {
           setOrders(ordsData);
-          // Sumar todas las comisiones acumuladas del trabajador
-          const totalComm = ordsData.reduce((acc, o) => acc + (Number(o.commission_earned) || 0), 0);
-          setStats({ sales: ordsData.length, comm: totalComm });
+          
+          // 📊 Cálculos financieros basados en estados 'pending' y 'paid'
+          const totalUmsatz = ordsData.reduce((acc, o) => acc + (Number(o.purchase_amount) || 0), 0);
+          const pendingComm = ordsData.filter(o => o.commission_status === 'pending').reduce((acc, o) => acc + (Number(o.commission_earned) || 0), 0);
+          const paidComm = ordsData.filter(o => o.commission_status === 'paid').reduce((acc, o) => acc + (Number(o.commission_earned) || 0), 0);
+
+          setStats({ 
+            sales: ordsData.length, 
+            umsatz: totalUmsatz,
+            offen: pendingComm, 
+            bezahlt: paidComm 
+          });
         }
       } catch (err) {
         console.error("Error cargando dashboard:", err);
@@ -130,7 +140,7 @@ export default function WorkerDashboard() {
       <main className="max-w-7xl mx-auto p-6 md:p-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         <div className="flex flex-col gap-6">
-          {/* SECCIÓN DE LA LANDING DINÁMICA CON QR AJUSTADO */}
+          {/* SECCIÓN DE LA LANDING DINÁMICA CON QR AJUSTADO A PROPORCIÓN DE MARCO */}
           <div className="relative w-full rounded-[2.5rem] overflow-hidden border border-white/10 bg-black aspect-[3/4] shadow-2xl group">
             {activeLanding ? (
               <img 
@@ -145,7 +155,7 @@ export default function WorkerDashboard() {
               </div>
             )}
 
-            {/* Capa del QR sobre la imagen con control de carga seguro */}
+            {/* Capa del QR sobre la imagen con tamaño y tolerancia simétrica */}
             <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-gradient-to-t from-black via-transparent to-transparent">
               <div className="p-4 bg-white rounded-[2rem] shadow-[0_0_50px_rgba(212,225,55,0.3)] transform transition-transform hover:scale-105">
                 {promoLink ? (
@@ -184,15 +194,35 @@ export default function WorkerDashboard() {
             </div>
           </div>
 
-          {/* COMISIONES TOTALES SUMADAS DESDE ORDERS */}
-          <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] backdrop-blur-sm">
-            <Wallet className="text-[#d4e137] mb-4" size={24} />
-            <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest italic">Meine Provisionen</p>
-            <h2 className="text-4xl font-black italic mt-1 text-[#d4e137]">{stats.comm.toLocaleString('de-DE')} €</h2>
+          {/* SECCIÓN DE CONTADORES CORREGIDOS Y DISTRIBUIDOS */}
+          <div className="grid grid-cols-1 gap-4">
+            {/* 1. Volumen de Ventas (Umsatz) */}
+            <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] backdrop-blur-sm">
+              <p className="text-gray-500 text-[9px] font-black uppercase tracking-widest italic">Umsatzvolumen</p>
+              <h3 className="text-2xl font-black italic mt-1 text-blue-400">
+                {stats.umsatz.toLocaleString('de-DE')} €
+              </h3>
+            </div>
+
+            {/* 2. Comisiones Pendientes (Offen) */}
+            <div className="bg-orange-500/5 border border-orange-500/10 p-6 rounded-[2rem] backdrop-blur-sm">
+              <p className="text-orange-500/70 text-[9px] font-black uppercase tracking-widest italic">Offene Provision</p>
+              <h3 className="text-2xl font-black italic mt-1 text-orange-500">
+                {stats.offen.toLocaleString('de-DE')} €
+              </h3>
+            </div>
+
+            {/* 3. Comisiones Pagadas (Bezahlt) */}
+            <div className="bg-[#d4e137]/5 border border-[#d4e137]/10 p-6 rounded-[2rem] backdrop-blur-sm">
+              <p className="text-[#d4e137]/70 text-[9px] font-black uppercase tracking-widest italic">Bezahlte Provision</p>
+              <h3 className="text-2xl font-black italic mt-1 text-[#d4e137]">
+                {stats.bezahlt.toLocaleString('de-DE')} €
+              </h3>
+            </div>
           </div>
         </div>
 
-        {/* LISTA DE HISTORIAL DE COMPRAS (Muestra nombre real mediante Unión) */}
+        {/* LISTA DE HISTORIAL DE COMPRAS CON EMPAREJAMIENTO DE NOMBRE EN TIEMPO REAL */}
         <div className="lg:col-span-2">
           <div className="bg-white/5 border border-white/10 rounded-[3rem] p-8 md:p-10 min-h-full backdrop-blur-sm">
             <div className="flex justify-between items-center mb-10">
@@ -210,14 +240,14 @@ export default function WorkerDashboard() {
                 </div>
               ) : (
                 orders.map((o: any) => {
-                  // ✨ SOLUCIÓN DE UNIÓN: Buscar los datos del lead para extraer su Nombre y Apellido
+                  // ✨ SOLUCIÓN DE UNIÓN: Buscar los datos del lead en customers usando el email como puente
                   const matchedCustomer = (customers || []).find(c => c.email.toLowerCase() === o.customer_email.toLowerCase());
                   const displayName = matchedCustomer ? matchedCustomer.full_name : "Gast-Kunde";
 
                   return (
                     <div key={o.id} className="p-6 bg-black/40 rounded-[2rem] border border-white/5 flex justify-between items-center group hover:border-white/20 transition-all">
                       <div className="text-left">
-                        {/* ✅ Muestra el Nombre Real ("asd" en tu ejemplo) */}
+                        {/* Muestra el nombre real del cliente o Gast-Kunde en su defecto */}
                         <p className="font-black text-lg tracking-tight group-hover:text-[#d4e137] transition-colors uppercase italic">{displayName}</p>
                         <p className="text-[10px] text-gray-500 font-mono mt-1 uppercase font-bold tracking-widest">{o.customer_email}</p>
                       </div>
