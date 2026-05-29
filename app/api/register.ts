@@ -14,7 +14,7 @@ const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL!; // your email
 export default async function handler(req: Request) {
   // CORS headers
   const headers = {
-    'Access-Control-Allow-Origin': 'https://shop.energiecheck-24.de',
+    'Access-Control-Allow-Origin': 'https://energiecheck-24.myshopify.com',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json',
