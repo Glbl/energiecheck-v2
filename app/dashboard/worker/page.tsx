@@ -6,7 +6,6 @@ import {
   Copy, 
   CheckCircle2, 
   Users, 
-  Wallet, 
   LogOut, 
   LayoutDashboard,
   Image as ImageIcon
@@ -18,7 +17,6 @@ export default function WorkerDashboard() {
   const [orders, setOrders] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [activeLanding, setActiveLanding] = useState('');
-  // Estado financiero optimizado y segmentado para reflejar el panel del admin
   const [stats, setStats] = useState({ sales: 0, umsatz: 0, offen: 0, bezahlt: 0 });
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -57,24 +55,24 @@ export default function WorkerDashboard() {
           .single();
         if (promoData) setActiveLanding(promoData.image_url);
 
-        // 3. Cargar Leads / Clientes Registrados iniciales (Para la agenda de nombres)
+        // 3. 🔥 MODIFICADO: Cargar TODOS los clientes asignados (Ordenados por fecha de registro reciente)
         const { data: custData } = await supabase
           .from('customers')
           .select('*')
-          .eq('worker_id', workerId);
+          .eq('worker_id', workerId)
+          .order('registration_date', { ascending: false });
         if (custData) setCustomers(custData);
 
-        // 4. Cargar Órdenes y Comisiones reales desde la nueva tabla 'orders'
+        // 4. Cargar Órdenes y Comisiones reales
         const { data: ordsData } = await supabase
           .from('orders')
           .select('*')
-          .eq('worker_id', workerId)
-          .order('created_at', { ascending: false });
+          .eq('worker_id', workerId);
 
         if (ordsData) {
           setOrders(ordsData);
           
-          // 📊 Cálculos financieros basados en estados 'pending' y 'paid'
+          // Cálculos financieros basados en estados 'pending' y 'paid'
           const totalUmsatz = ordsData.reduce((acc, o) => acc + (Number(o.purchase_amount) || 0), 0);
           const pendingComm = ordsData.filter(o => o.commission_status === 'pending').reduce((acc, o) => acc + (Number(o.commission_earned) || 0), 0);
           const paidComm = ordsData.filter(o => o.commission_status === 'paid').reduce((acc, o) => acc + (Number(o.commission_earned) || 0), 0);
@@ -96,7 +94,6 @@ export default function WorkerDashboard() {
     loadDashboardData();
   }, [router]);
 
-  // Link dinámico para el QR y para copiar
   const promoLink = employee 
     ? `https://energiecheck-v2.vercel.app/promotion?code=${employee.id_employee}&source=qr`
     : "";
@@ -140,7 +137,7 @@ export default function WorkerDashboard() {
       <main className="max-w-7xl mx-auto p-6 md:p-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         <div className="flex flex-col gap-6">
-          {/* SECCIÓN DE LA LANDING DINÁMICA CON QR AJUSTADO A PROPORCIÓN DE MARCO */}
+          {/* QR */}
           <div className="relative w-full rounded-[2.5rem] overflow-hidden border border-white/10 bg-black aspect-[3/4] shadow-2xl group">
             {activeLanding ? (
               <img 
@@ -155,7 +152,6 @@ export default function WorkerDashboard() {
               </div>
             )}
 
-            {/* Capa del QR sobre la imagen con tamaño y tolerancia simétrica */}
             <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-gradient-to-t from-black via-transparent to-transparent">
               <div className="p-4 bg-white rounded-[2rem] shadow-[0_0_50px_rgba(212,225,55,0.3)] transform transition-transform hover:scale-105">
                 {promoLink ? (
@@ -183,7 +179,7 @@ export default function WorkerDashboard() {
             </div>
           </div>
 
-          {/* LINK DE COPIADO RÁPIDO */}
+          {/* LINK */}
           <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] backdrop-blur-sm">
             <p className="text-[9px] text-gray-500 uppercase font-bold text-center mb-3 tracking-widest italic">Link manuell teilen</p>
             <div className="flex items-center gap-2 bg-black/50 p-2 rounded-xl border border-white/5">
@@ -194,9 +190,8 @@ export default function WorkerDashboard() {
             </div>
           </div>
 
-          {/* SECCIÓN DE CONTADORES CORREGIDOS Y DISTRIBUIDOS */}
+          {/* COUNTERS */}
           <div className="grid grid-cols-1 gap-4">
-            {/* 1. Volumen de Ventas (Umsatz) */}
             <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] backdrop-blur-sm">
               <p className="text-gray-500 text-[9px] font-black uppercase tracking-widest italic">Umsatzvolumen</p>
               <h3 className="text-2xl font-black italic mt-1 text-blue-400">
@@ -204,7 +199,6 @@ export default function WorkerDashboard() {
               </h3>
             </div>
 
-            {/* 2. Comisiones Pendientes (Offen) */}
             <div className="bg-orange-500/5 border border-orange-500/10 p-6 rounded-[2rem] backdrop-blur-sm">
               <p className="text-orange-500/70 text-[9px] font-black uppercase tracking-widest italic">Offene Provision</p>
               <h3 className="text-2xl font-black italic mt-1 text-orange-500">
@@ -212,7 +206,6 @@ export default function WorkerDashboard() {
               </h3>
             </div>
 
-            {/* 3. Comisiones Pagadas (Bezahlt) */}
             <div className="bg-[#d4e137]/5 border border-[#d4e137]/10 p-6 rounded-[2rem] backdrop-blur-sm">
               <p className="text-[#d4e137]/70 text-[9px] font-black uppercase tracking-widest italic">Bezahlte Provision</p>
               <h3 className="text-2xl font-black italic mt-1 text-[#d4e137]">
@@ -222,42 +215,67 @@ export default function WorkerDashboard() {
           </div>
         </div>
 
-        {/* LISTA DE HISTORIAL DE COMPRAS CON EMPAREJAMIENTO DE NOMBRE EN TIEMPO REAL */}
+        {/* 📋 SECCIÓN REESTRUCTURADA: AHORA MUESTRA TODOS LOS LEADS REGISTRADOS */}
         <div className="lg:col-span-2">
           <div className="bg-white/5 border border-white/10 rounded-[3rem] p-8 md:p-10 min-h-full backdrop-blur-sm">
             <div className="flex justify-between items-center mb-10">
-              <h3 className="text-2xl font-black italic uppercase tracking-tight">Geworbene Kunden</h3>
+              <h3 className="text-2xl font-black italic uppercase tracking-tight">Geworbene Kunden & Leads</h3>
               <div className="bg-black/40 px-4 py-2 rounded-full border border-white/5 flex items-center gap-2 shadow-inner">
                 <Users size={16} className="text-gray-500" />
-                <span className="text-sm font-black text-[#d4e137]">{orders.length}</span>
+                {/* Mostramos el contador total basado en la cantidad de clientes captados */}
+                <span className="text-sm font-black text-[#d4e137]">{customers.length}</span>
               </div>
             </div>
 
             <div className="space-y-4">
-              {orders.length === 0 ? (
+              {customers.length === 0 ? (
                 <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[2.5rem]">
-                  <p className="text-gray-600 font-bold uppercase tracking-widest text-xs italic">Noch keine Kunden registriert</p>
+                  <p className="text-gray-600 font-bold uppercase tracking-widest text-xs italic">Noch keine Leads oder Kunden registriert</p>
                 </div>
               ) : (
-                orders.map((o: any) => {
-                  // ✨ SOLUCIÓN DE UNIÓN: Buscar los datos del lead en customers usando el email como puente
-                  const matchedCustomer = (customers || []).find(c => c.email.toLowerCase() === o.customer_email.toLowerCase());
-                  const displayName = matchedCustomer ? matchedCustomer.full_name : "Gast-Kunde";
+                customers.map((c: any) => {
+                  // 🔍 Buscamos si este cliente específico tiene una orden registrada vinculada a su correo
+                  const matchedOrder = (orders || []).find(o => o.customer_email.toLowerCase() === c.email.toLowerCase());
 
                   return (
-                    <div key={o.id} className="p-6 bg-black/40 rounded-[2rem] border border-white/5 flex justify-between items-center group hover:border-white/20 transition-all">
+                    <div key={c.id} className="p-6 bg-black/40 rounded-[2rem] border border-white/5 flex justify-between items-center group hover:border-white/20 transition-all">
                       <div className="text-left">
-                        {/* Muestra el nombre real del cliente o Gast-Kunde en su defecto */}
-                        <p className="font-black text-lg tracking-tight group-hover:text-[#d4e137] transition-colors uppercase italic">{displayName}</p>
-                        <p className="text-[10px] text-gray-500 font-mono mt-1 uppercase font-bold tracking-widest">{o.customer_email}</p>
+                        <p className="font-black text-lg tracking-tight group-hover:text-[#d4e137] transition-colors uppercase italic">
+                          {c.full_name || "Gast-Kunde"}
+                        </p>
+                        <p className="text-[10px] text-gray-500 font-mono mt-1 uppercase font-bold tracking-widest">
+                          {c.email}
+                        </p>
+                        {/* Indicador de Teléfono si está disponible */}
+                        {c.phone && (
+                          <p className="text-[9px] text-gray-600 font-sans mt-0.5 font-medium">
+                            Tel: {c.phone}
+                          </p>
+                        )}
                       </div>
-                      <div className="text-right">
-                        <p className="text-[#d4e137] font-black italic text-xl leading-none">{Number(o.commission_earned).toLocaleString('de-DE')} €</p>
-                        <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded italic mt-2 block ${
-                          o.commission_status === 'paid' ? 'text-[#d4e137] bg-[#d4e137]/5' : 'text-orange-500 bg-orange-500/5'
-                        }`}>
-                          Status: {o.commission_status === 'paid' ? 'Bezahlt' : 'Offen'}
-                        </span>
+                      
+                      <div className="text-right flex flex-col items-end">
+                        {matchedOrder ? (
+                          <>
+                            {/* Si tiene orden, muestra el monto ganado con éxito */}
+                            <p className="text-[#d4e137] font-black italic text-xl leading-none">
+                              {Number(matchedOrder.commission_earned).toLocaleString('de-DE')} €
+                            </p>
+                            <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded italic mt-2 block ${
+                              matchedOrder.commission_status === 'paid' ? 'text-[#d4e137] bg-[#d4e137]/5' : 'text-orange-500 bg-orange-500/5'
+                            }`}>
+                              {matchedOrder.commission_status === 'paid' ? 'Bezahlt' : 'Offen'}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            {/* Si no ha comprado nada, se muestra estéticamente como Lead / Interesado en gris */}
+                            <p className="text-gray-600 font-black italic text-xl leading-none">0,00 €</p>
+                            <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded italic mt-2 block text-gray-400 bg-white/5 border border-white/5">
+                              Lead / Registriert
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
