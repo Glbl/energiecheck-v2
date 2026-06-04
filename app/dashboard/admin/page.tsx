@@ -53,7 +53,7 @@ export default function AdminDashboard() {
       if (custData) setCustomers(custData);
 
       // 4. Cargar logs de conversión/embudo
-      const { data: logs } = await supabase.from('funnel_logs').select('*').order('created_at', { ascending: false }).limit(50);
+      const { data: logs } = await supabase.from('user_funnel_logs').select('*').order('created_at', { ascending: false }).limit(50);
       if (logs) setFunnelLogs(logs);
 
     } catch (err) {
@@ -158,11 +158,10 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#05070a] text-white flex text-left font-sans">
+   <div className="min-h-screen bg-[#05070a] text-white flex flex-col md:flex-row text-left font-sans">
       
       {/* SIDEBAR ASIDE */}
-      <aside className="w-80 border-r border-white/5 bg-black/40 backdrop-blur-2xl p-8 flex flex-col justify-between sticky top-0 h-screen z-40">
-        <div>
+<aside className="w-full md:w-80 border-b md:border-b-0 md:border-r border-white/5 bg-black/40 backdrop-blur-2xl p-6 md:p-8 flex flex-row md:flex-col justify-between sticky top-0 h-auto md:h-screen z-40">        <div>
           <div className="flex items-center gap-3 mb-12">
             <div className="w-4 h-4 bg-[#d4e137] rounded-full animate-pulse" />
             <h1 className="text-xl font-black italic tracking-tighter uppercase">EnergieCheck V2</h1>
