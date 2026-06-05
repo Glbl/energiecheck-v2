@@ -111,27 +111,35 @@ export default function EmployeeProfile() {
               <p className="text-gray-500 text-sm italic font-mono">Keine Kunden für diesen Mitarbeiter registriert.</p>
             ) : (
               customers.map((c: any) => (
-                <div key={c.id} className="p-6 bg-black/40 rounded-2xl border border-white/5 flex justify-between items-center transition-all hover:bg-white/5">
-                  <div>
-                    <p className="font-bold text-lg font-mono text-gray-300 break-all truncate">{c.email || 'Keine E-Mail'}</p>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-gray-500 font-mono mt-1">
-                      <span>Kauf: {Number(c.purchase_amount).toLocaleString('de-DE')} €</span>
-                      <span>•</span>
-                      <span>Registriert: {c.registration_date ? new Date(c.registration_date).toLocaleDateString('de-DE') : '-'}</span>
-                      <span>•</span>
-                      <span className="uppercase text-blue-400">Status: {c.status || 'lead'}</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[#d4e137] font-black">{Number(c.commission_earned).toLocaleString('de-DE')} €</p>
-                    <p className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded inline-block mt-1 ${
-                      c.commission_status === 'paid' ? 'text-[#d4e137] bg-[#d4e137]/5' : 'text-orange-500 bg-orange-500/5'
-                    }`}>
-                      {c.commission_status === 'paid' ? 'Bezahlt' : 'Offen'}
-                    </p>
-                  </div>
-                </div>
-              ))
+  <div key={c.id} className="p-6 bg-black/40 rounded-2xl border border-white/5 flex justify-between items-center transition-all hover:bg-white/5 w-full min-w-0 gap-4">
+    {/* Añadimos min-w-0 y flex-1 a este contenedor para limitar su expansión */}
+    <div className="min-w-0 flex-1 text-left">
+      {/* Aplicamos break-all y truncate al correo electrónico */}
+      <p className="font-bold text-base sm:text-lg font-mono text-gray-300 break-all sm:truncate max-w-full">
+        {c.email || 'Keine E-Mail'}
+      </p>
+      
+      {/* Flex wrap para las etiquetas de abajo para que no se desborden en celular */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-gray-500 font-mono mt-1">
+        <span>Kauf: {Number(c.purchase_amount).toLocaleString('de-DE')} €</span>
+        <span>•</span>
+        <span>Registriert: {c.registration_date ? new Date(c.registration_date).toLocaleDateString('de-DE') : '-'}</span>
+        <span>•</span>
+        <span className="uppercase text-blue-400">Status: {c.status || 'lead'}</span>
+      </div>
+    </div>
+
+    {/* Bloque derecho de la comisión (se mantiene alineado e intacto) */}
+    <div className="text-right flex-shrink-0">
+      <p className="text-[#d4e137] font-black text-sm sm:text-base">{Number(c.commission_earned).toLocaleString('de-DE')} €</p>
+      <p className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded inline-block mt-1 ${
+        c.commission_status === 'paid' ? 'text-[#d4e137] bg-[#d4e137]/5' : 'text-orange-500 bg-orange-500/5'
+      }`}>
+        {c.commission_status === 'paid' ? 'Bezahlt' : 'Offen'}
+      </p>
+    </div>
+  </div>
+))
             )}
           </div>
         </div>
