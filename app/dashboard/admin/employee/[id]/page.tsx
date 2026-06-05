@@ -61,7 +61,8 @@ export default function EmployeeProfile() {
 
       <main className="max-w-7xl mx-auto p-10">
         {/* ENCABEZADO DEL PERFIL */}
-        <div className="flex items-center gap-8 mb-12 bg-white/5 p-10 rounded-[3rem] border border-white/10">
+        {/* ENCABEZADO DEL PERFIL */}
+<div className="flex flex-col md:flex-row items-center text-center md:text-left gap-6 md:gap-8 mb-12 bg-white/5 p-6 md:p-10 rounded-[2.5rem] md:rounded-[3rem] border border-white/10 w-full">
           <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-[#d4e137]">
             <img 
               src={`https://hoigzuytnzlkypkruyom.supabase.co/storage/v1/object/public/avatars/${employee?.photo_url}`} 
@@ -79,7 +80,7 @@ export default function EmployeeProfile() {
         </div>
 
         {/* TARJETAS DE MÉTRICAS INDIVIDUALES */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
           <div className="bg-white/5 border border-white/10 p-8 rounded-[2rem]">
             <ShoppingCart className="text-blue-400 mb-4" size={24} />
             <p className="text-gray-500 text-[10px] font-bold uppercase">Umsatzvolumen</p>

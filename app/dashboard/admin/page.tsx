@@ -196,19 +196,19 @@ export default function AdminDashboard() {
       {/* CONTENIDO PRINCIPAL */}
       <main className="flex-1 p-12 overflow-y-auto h-screen">
         
-        {/* HEADER */}
-        <div className="flex justify-between items-center mb-12">
-          <div>
-            <h2 className="text-4xl font-black uppercase italic tracking-tight">Systemverwaltung</h2>
-            <p className="text-gray-500 text-sm font-mono mt-1">Willkommen zurück, Administrator José.</p>
-          </div>
-          <button 
-            onClick={() => { setIsEditMode(false); setSelectedDbId(null); setFormData({ id_employee: '', full_name: '', email: '', username: '', password: '', photo_url: '', role: 'worker' }); setIsModalOpen(true); }}
-            className="flex items-center gap-2 px-6 py-4 bg-[#d4e137] text-black font-black uppercase italic rounded-2xl hover:bg-[#c2cf2e] transition-all shadow-[0_0_30px_rgba(212,225,55,0.2)]"
-          >
-            <UserPlus size={18} /> Mitarbeiter anlegen
-          </button>
-        </div>
+       {/* HEADER */}
+<div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12 w-full">
+  <div>
+    <h2 className="text-3xl md:text-4xl font-black uppercase italic tracking-tight">Systemverwaltung</h2>
+    <p className="text-gray-500 text-xs md:text-sm font-mono mt-1">Willkommen zurück, Administrator José.</p>
+  </div>
+  <button 
+    onClick={() => { setIsEditMode(false); setSelectedDbId(null); setFormData({ id_employee: '', full_name: '', email: '', username: '', password: '', photo_url: '', role: 'worker' }); setIsModalOpen(true); }}
+    className="flex items-center justify-center gap-2 w-full md:w-auto px-5 py-3 md:px-6 md:py-4 bg-[#d4e137] text-black font-black uppercase italic rounded-2xl hover:bg-[#c2cf2e] transition-all text-xs md:text-sm shadow-[0_0_30px_rgba(212,225,55,0.2)]"
+  >
+    <UserPlus size={16} /> Mitarbeiter anlegen
+  </button>
+</div>
 
         {/* METRICAS PRINCIPALES (AQUÍ SE CAMBIÓ LA PRIMERA TARJETA) */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
@@ -303,25 +303,32 @@ export default function AdminDashboard() {
             })}
           </div>
         </div>
-
-        {/* LOGS DE ACTIVIDAD DEL EMBUDO (FUNNEL) */}
-        <div className="bg-white/5 border border-white/10 rounded-[3rem] p-10">
-          <div className="flex items-center gap-3 mb-8">
-            <Activity className="text-purple-400" size={20} />
-            <h3 className="text-2xl font-black uppercase italic tracking-tight">Live Funnel Tracker</h3>
+{/* LOGS DE ACTIVIDAD DEL EMBUDO (FUNNEL) */}
+<div className="bg-white/5 border border-white/10 rounded-[3rem] p-6 md:p-10">
+  <div className="flex items-center gap-3 mb-8">
+    <Activity className="text-purple-400" size={20} />
+    <h3 className="text-2xl font-black uppercase italic tracking-tight">Live Funnel Tracker</h3>
+  </div>
+  
+  <div className="space-y-3 max-h-96 overflow-y-auto pr-2 font-mono text-xs">
+    {funnelLogs.length === 0 ? (
+      <p className="text-gray-500 italic">Keine Live-Aktivitäten vorhanden.</p>
+    ) : (
+      funnelLogs.map((log) => (
+        <div key={log.id} className="p-4 bg-black/20 rounded-xl border border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-gray-400">
+          <div>
+            {/* Se cambió log.step por log.worker_id y log.message por log.current_step */}
+            <span className="text-[#d4e137] font-bold mr-2">[{log.worker_id || 'SYSTEM'}]</span> 
+            <span className="text-white uppercase font-bold italic">{log.current_step || 'Aktion Start'}</span>
           </div>
-          
-          <div className="space-y-3 max-h-96 overflow-y-auto pr-2 font-mono text-xs">
-            {funnelLogs.map((log) => (
-              <div key={log.id} className="p-4 bg-black/20 rounded-xl border border-white/5 flex justify-between items-center text-gray-400">
-                <div>
-                  <span className="text-[#d4e137] font-bold">[{log.step?.toUpperCase()}]</span> {log.message}
-                </div>
-                <span className="text-[10px] text-gray-600">{log.created_at ? new Date(log.created_at).toLocaleTimeString() : ''}</span>
-              </div>
-            ))}
-          </div>
+          <span className="text-[10px] text-gray-600 sm:ml-auto">
+            {log.created_at ? new Date(log.created_at).toLocaleTimeString('de-DE') : ''}
+          </span>
         </div>
+      ))
+    )}
+  </div>
+</div>
 
       </main>
 
