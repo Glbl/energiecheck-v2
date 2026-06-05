@@ -113,7 +113,7 @@ export default function EmployeeProfile() {
               customers.map((c: any) => (
                 <div key={c.id} className="p-6 bg-black/40 rounded-2xl border border-white/5 flex justify-between items-center transition-all hover:bg-white/5">
                   <div>
-                    <p className="font-bold text-lg font-mono text-gray-300">{c.email || 'Keine E-Mail'}</p>
+                    <p className="font-bold text-lg font-mono text-gray-300 break-all truncate">{c.email || 'Keine E-Mail'}</p>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-gray-500 font-mono mt-1">
                       <span>Kauf: {Number(c.purchase_amount).toLocaleString('de-DE')} €</span>
                       <span>•</span>

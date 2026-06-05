@@ -325,18 +325,20 @@ export default function AdminDashboard() {
             <h3 className="text-xl font-black italic uppercase mb-6 text-[#d4e137]">{isEditMode ? 'Mitarbeiter Bearbeiten' : 'Mitarbeiter Anlegen'}</h3>
             
             <form onSubmit={handleSave} className="space-y-4 text-xs">
-              
-              {/* ZONA DE CONTROL DE CARGA FOTOGRÁFICA REINTEGRADA */}
-              <div className="flex flex-col items-center gap-3 bg-black/20 p-4 rounded-2xl border border-white/5">
-                <div className="w-16 h-16 rounded-full bg-white/5 border border-dashed border-white/20 flex items-center justify-center overflow-hidden">
-                  {formData.photo_url ? <img src={STORAGE_URL + formData.photo_url} className="w-full h-full object-cover" /> : <Upload className="text-gray-600" size={16} />}
-                </div>
-                <label className="cursor-pointer bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-[10px] font-bold uppercase transition-all tracking-wider text-gray-300">
-                  {uploading ? 'Lädt...' : 'Foto hochladen'}
-                  <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
-                </label>
-              </div>
-
+             {/* ZONA DE CONTROL DE CARGA FOTOGRÁFICA INTERACTIVA COMPLETA */}
+<label className="cursor-pointer w-full group flex flex-col items-center gap-3 bg-black/20 p-6 rounded-2xl border border-white/5 hover:border-[#d4e137] transition-all">
+  <div className="w-16 h-16 rounded-full bg-white/5 border border-dashed border-white/20 group-hover:border-[#d4e137] flex items-center justify-center overflow-hidden transition-all">
+    {formData.photo_url ? (
+      <img src={STORAGE_URL + formData.photo_url} className="w-full h-full object-cover" />
+    ) : (
+      <Upload className="text-gray-500 group-hover:text-[#d4e137] transition-all" size={18} />
+    )}
+  </div>
+  <span className="bg-white/5 group-hover:bg-[#d4e137] group-hover:text-black px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all tracking-wider text-gray-300">
+    {uploading ? 'Lädt...' : 'Foto hochladen'}
+  </span>
+  <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
+</label>
               <div>
                 <label className="text-gray-500 text-[9px] font-bold uppercase font-mono block mb-1">Mitarbeiter-ID (Z.B. HN121285)</label>
                 <input required type="text" placeholder="ID" className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs focus:border-[#d4e137] outline-none font-mono" value={formData.id_employee} onChange={e => setFormData({...formData, id_employee: e.target.value})} />
