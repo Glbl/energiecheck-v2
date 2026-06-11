@@ -5,9 +5,9 @@ export default function BusinessDashboard() {
   const [reportData, setReportData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Consulta al endpoint de analíticas que creamos previamente
-    fetch('/api/game/report')
+ useEffect(() => {
+    // Añadimos un timestamp (?t=...) al final para romper la caché del navegador de forma definitiva
+    fetch(`/api/game/report?t=${Date.now()}`)
       .then(res => res.json())
       .then(data => {
         setReportData(data);
