@@ -17,11 +17,25 @@ export default function StaffPanel() {
   };
 
   useEffect(() => {
-    fetchQueue();
-    // Consultamos la cola cada 5 segundos de forma automática
-    const interval = setInterval(fetchQueue, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  // Carga inicial de la cola
+  fetchQueue();
+
+  // Escucha en tiempo real: Cada vez que ocurra un INSERT o UPDATE en Supabase, actualiza la pantalla
+  const channel = supabase
+    .channel('schema-db-changes')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'game_participants' },
+      () => {
+        fetchQueue(); // Recarga la lista automáticamente con el cambio en vivo
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, []);
 
   const handleAssignPrize = async (participantId: string, prize: number) => {
     try {

@@ -17,12 +17,12 @@ export async function POST(request: Request) {
       .single();
 
     if (pError || !participant) {
-      return NextResponse.json({ error: 'Participante no encontrado.' }, { status: 404 });
+      return NextResponse.json({ error: 'Teilnehmer nicht gefunden.' }, { status: 404 });
     }
 
     let couponCode = null;
 
-    // 2. Si ganó dinero, secuestramos un cupón disponible de la base de datos
+    // 2. Si ganó dinero, secuestramos un cupón único disponible de la base de datos
     if (prizeWon > 0) {
       const { data: coupon, error: cError } = await supabase
         .from('prize_coupons')
@@ -30,18 +30,24 @@ export async function POST(request: Request) {
         .eq('prize_level', prizeWon)
         .eq('is_used', false)
         .limit(1)
-        .maybeSingle();
+        .maybeSingle(); // Trae el primer código libre que encuentre
 
       if (cError || !coupon) {
-        return NextResponse.json({ error: `No quedan cupones libres para el nivel de €${prizeWon}` }, { status: 400 });
+        return NextResponse.json({ 
+          error: `⚠️ ACHTUNG: Bei Supabase sind keine einzigartigen Gutscheine mehr für die Stufe verfügbar. €${prizeWon}.` 
+        }, { status: 400 });
       }
 
       couponCode = coupon.coupon_code;
 
-      // Marcamos el cupón como quemado inmediatamente
+      // Quemamos el código único en Supabase vinculándolo al correo del ganador
       await supabase
         .from('prize_coupons')
-        .update({ is_used: true, assigned_to_email: participant.email, used_at: new Date().toISOString() })
+        .update({ 
+          is_used: true, 
+          assigned_to_email: participant.email, 
+          used_at: new Date().toISOString() 
+        })
         .eq('coupon_code', couponCode);
     }
 
@@ -51,14 +57,115 @@ export async function POST(request: Request) {
       .update({ prize_won: prizeWon, assigned_coupon: couponCode, status: 'completed' })
       .eq('id', participantId);
 
-    // 4. Construcción del Email con Resend
+    // 4. Construcción del Email con Resend (Estructura Premium Unificada)
     let emailSubject = prizeWon > 0 ? `Glückwunsch! Du hast einen €${prizeWon} Gutschein gewonnen!` : `Vielen Dank für deine Teilnahme!`;
+    
     let emailHtml = prizeWon > 0 
-      ? `<h2>Hallo ${participant.full_name},</h2><p>Du hast €${prizeWon} gewonnen! Dein Code lautet: <strong>${couponCode}</strong></p>`
-      : `<h2>Hallo ${participant.full_name},</h2><p>Danke fürs Mitspielen! Schade, dieses Mal hast du nichts gewonnen.</p>`;
+      ? `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Herzlichen Glückwunsch!</title>
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #f7f9fc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+          <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
+            <!-- HEADER LOGO -->
+            <tr>
+              <td align="center" style="padding: 30px 20px; background-color: #000000;">
+                <img src="https://hoigzuytnzlkypkruyom.supabase.co/storage/v1/object/public/assets/energicheck.png" alt="Energiecheck-24" width="180" style="display: block; border: 0;">
+              </td>
+            </tr>
+            
+            <!-- CONTENIDO PRINCIPAL -->
+            <tr>
+              <td style="padding: 40px 30px;">
+                <h1 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 800; color: #1a202c; text-align: center; text-transform: uppercase; letter-spacing: -0.5px;">
+                  🎉 Hauptgewinn getroffen!
+                </h1>
+                <p style="margin: 0 0 24px 0; font-size: 15px; line-height: 1.6; color: #4a5568; text-align: center;">
+                  Hallo <strong>${participant.full_name}</strong>,<br>
+                  vielen Dank für deinen Besuch an unserem Stand! Du hast beim <strong>WIN BIG</strong> Gewinnspiel sensationell abgeräumt.
+                </p>
 
+                <!-- CAJA DETALLE DEL PREMIO -->
+                <div style="background-color: #fff9e6; border: 2px dashed #ffd600; border-radius: 12px; padding: 25px 20px; text-align: center; margin-bottom: 24px;">
+                  <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #b7791f; display: block; margin-bottom: 5px;">Dein Gewinnwert</span>
+                  <span style="font-size: 42px; font-weight: 900; color: #000000; display: block; margin-bottom: 15px;">€ ${prizeWon},00</span>
+                  <span style="font-size: 13px; color: #4a5568; display: block; margin-bottom: 8px;">Nutze deinen exklusiven Rabattcode im Checkout:</span>
+                  <div style="background-color: #ffffff; border: 1px solid #e2e8f0; padding: 12px; font-family: monospace; font-size: 20px; font-weight: bold; color: #df4432; letter-spacing: 2px; border-radius: 8px; display: inline-block; min-width: 200px;">
+                    ${couponCode}
+                  </div>
+                </div>
+
+                <!-- CALL TO ACTION BUTTON -->
+                <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 30px;">
+                  <tr>
+                    <td align="center" style="border-radius: 8px;" bgcolor="#000000">
+                      <a href="https://energiecheck-24.myshopify.com" target="_blank" style="font-size: 14px; font-weight: bold; color: #ffffff; text-decoration: none; padding: 14px 30px; display: inline-block; border-radius: 8px;">
+                        Gutschein einlösen ➔
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <hr style="border: 0; border-top: 1px solid #edf2f7; margin-bottom: 24px;">
+
+                <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #718096; text-align: center;">
+                  *Der Gutschein ist bis zum 01. August 2026 gültig und kann einmalig für deine Bestellung auf energiecheck-24.de angewendet werden.
+                </p>
+              </td>
+            </tr>
+
+            <!-- FOOTER CORPORATIVO -->
+            <tr>
+              <td style="padding: 24px; background-color: #f7f9fc; border-top: 1px solid #edf2f7; text-align: center;">
+                <p style="margin: 0 0 6px 0; font-size: 12px; font-weight: bold; color: #1a202c;">Energiecheck-24 Team</p>
+                <p style="margin: 0; font-size: 11px; color: #a0aec0;">© 2026 Energiecheck-24. Alle Rechte vorbehalten.</p>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `
+      : `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Vielen Dank für deine Teilnahme!</title>
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #f7f9fc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
+            <tr>
+              <td align="center" style="padding: 30px 20px; background-color: #000000;">
+                <img src="https://hoigzuytnzlkypkruyom.supabase.co/storage/v1/object/public/assets/energicheck.png" alt="Energiecheck-24" width="180" style="display: block; border: 0;">
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 40px 30px; text-align: center;">
+                <h1 style="margin: 0 0 16px 0; font-size: 22px; font-weight: 800; color: #1a202c;">Vielen Dank für deinen Besuch!</h1>
+                <p style="margin: 0 0 24px 0; font-size: 15px; line-height: 1.6; color: #4a5568;">
+                  Hallo <strong>${participant.full_name}</strong>,<br>
+                  schön, dass du bei unserem Gewinnspiel am Stand mitgemacht hast! Auch wenn es diesmal kein Hauptgewinn war, hoffen wir, du hattest jede Menge Spaß.
+                </p>
+                <p style="margin: 0 0 30px 0; font-size: 14px; color: #718096;">
+                  Wir wünschen dir einen fantastischen Tag auf dem Event!
+                </p>
+                <hr style="border: 0; border-top: 1px solid #edf2f7; margin-bottom: 24px;">
+                <p style="margin: 0; font-size: 12px; font-weight: bold; color: #1a202c;">Dein Energiecheck-24 Team</p>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `;
+
+    // Envío del Email definitivo con remitente corporativo
     await resend.emails.send({
-      from: 'Energiecheck-24 Gewinnspiel <gewinnspiel@energiecheck-24.de>',
+      from: 'Energiecheck-24 Gewinnspiel <tarif@energiecheck-24.de>',
       to: [participant.email],
       subject: emailSubject,
       html: emailHtml,
