@@ -78,25 +78,32 @@ export default function BusinessDashboard() {
         </div>
       </div>
 
-      {/* MONITOR DE RESERVA EN ALMACÉN (SUPABASE COUPOUN INVENTORY) */}
+      {/* MONITOR DE RESERVA EN ALMACÉN (SUPABASE COUPOUN INVENTORY - INTEGRADO SIMÉTRICO) */}
       <div className="mb-10 p-6 bg-gray-900 text-white rounded-2xl shadow-md border border-gray-800">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-sm font-bold uppercase text-amber-400 tracking-wide">Gutschein-Lagerbestand (Supabase)</h3>
-          <span className="text-[10px] bg-amber-400/10 text-amber-300 px-2 py-0.5 rounded font-mono">Max 400 Codes</span>
+          <span className="text-[10px] bg-amber-400/10 text-amber-300 px-2 py-0.5 rounded font-mono">Max 450 Codes</span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
+          <div className="bg-gray-800/80 p-4 rounded-xl border border-gray-700 flex justify-between items-center">
+            <span className="text-gray-300">Gutscheine <b className="text-white">€10</b>:</span>
+            <span>
+              Verwendet: <b className="text-red-400 mr-2">{inventory.prize10?.used || 0}</b> 
+              Frei: <b className="text-emerald-400">{inventory.prize10?.free || 0}</b>
+            </span>
+          </div>
           <div className="bg-gray-800/80 p-4 rounded-xl border border-gray-700 flex justify-between items-center">
             <span className="text-gray-300">Gutscheine <b className="text-white">€30</b>:</span>
             <span>
-              Verwendet: <b className="text-red-400 mr-2">{inventory.prize30.used}</b> 
-              Frei: <b className="text-emerald-400">{inventory.prize30.free}</b>
+              Verwendet: <b className="text-red-400 mr-2">{inventory.prize30?.used || 0}</b> 
+              Frei: <b className="text-emerald-400">{inventory.prize30?.free || 0}</b>
             </span>
           </div>
           <div className="bg-gray-800/80 p-4 rounded-xl border border-gray-700 flex justify-between items-center">
             <span className="text-gray-300">Gutscheine <b className="text-white">€50</b>:</span>
             <span>
-              Verwendet: <b className="text-red-400 mr-2">{inventory.prize50.used}</b> 
-              Frei: <b className="text-emerald-400">{inventory.prize50.free}</b>
+              Verwendet: <b className="text-red-400 mr-2">{inventory.prize50?.used || 0}</b> 
+              Frei: <b className="text-emerald-400">{inventory.prize50?.free || 0}</b>
             </span>
           </div>
         </div>

@@ -58,7 +58,10 @@ export async function POST(request: Request) {
       .eq('id', participantId);
 
     // 4. Construcción del Email con Resend (Estructura Premium Unificada)
-    let emailSubject = prizeWon > 0 ? `Glückwunsch! Du hast einen €${prizeWon} Gutschein gewonnen!` : `Vielen Dank für deine Teilnahme!`;
+   // 4. Construcción del Email con Resend (Actualizado con €10 y Link a Shopify)
+    let emailSubject = prizeWon > 0 
+      ? `Glückwunsch! Du hast einen €${prizeWon} Gutschein gewonnen!` 
+      : `Vielen Dank für deine Teilnahme!`;
     
     let emailHtml = prizeWon > 0 
       ? `
@@ -71,14 +74,12 @@ export async function POST(request: Request) {
         </head>
         <body style="margin: 0; padding: 0; background-color: #f7f9fc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
           <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
-            <!-- HEADER LOGO -->
             <tr>
               <td align="center" style="padding: 30px 20px; background-color: #000000;">
                 <img src="https://hoigzuytnzlkypkruyom.supabase.co/storage/v1/object/public/assets/energicheck.png" alt="Energiecheck-24" width="180" style="display: block; border: 0;">
               </td>
             </tr>
             
-            <!-- CONTENIDO PRINCIPAL -->
             <tr>
               <td style="padding: 40px 30px;">
                 <h1 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 800; color: #1a202c; text-align: center; text-transform: uppercase; letter-spacing: -0.5px;">
@@ -89,7 +90,6 @@ export async function POST(request: Request) {
                   vielen Dank für deinen Besuch an unserem Stand! Du hast beim <strong>WIN BIG</strong> Gewinnspiel sensationell abgeräumt.
                 </p>
 
-                <!-- CAJA DETALLE DEL PREMIO -->
                 <div style="background-color: #fff9e6; border: 2px dashed #ffd600; border-radius: 12px; padding: 25px 20px; text-align: center; margin-bottom: 24px;">
                   <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #b7791f; display: block; margin-bottom: 5px;">Dein Gewinnwert</span>
                   <span style="font-size: 42px; font-weight: 900; color: #000000; display: block; margin-bottom: 15px;">€ ${prizeWon},00</span>
@@ -99,7 +99,6 @@ export async function POST(request: Request) {
                   </div>
                 </div>
 
-                <!-- CALL TO ACTION BUTTON -->
                 <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 30px;">
                   <tr>
                     <td align="center" style="border-radius: 8px;" bgcolor="#000000">
@@ -113,12 +112,11 @@ export async function POST(request: Request) {
                 <hr style="border: 0; border-top: 1px solid #edf2f7; margin-bottom: 24px;">
 
                 <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #718096; text-align: center;">
-                  *Der Gutschein ist bis zum 01. August 2026 gültig und kann einmalig für deine Bestellung auf energiecheck-24.de angewendet werden.
+                  *Der Gutschein ist bis zum 01. August 2026 gültig und kann einmalig für deine Bestellung auf energiecheck-24.myshopify.com angewendet werden.
                 </p>
               </td>
             </tr>
 
-            <!-- FOOTER CORPORATIVO -->
             <tr>
               <td style="padding: 24px; background-color: #f7f9fc; border-top: 1px solid #edf2f7; text-align: center;">
                 <p style="margin: 0 0 6px 0; font-size: 12px; font-weight: bold; color: #1a202c;">Energiecheck-24 Team</p>
@@ -135,7 +133,7 @@ export async function POST(request: Request) {
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Vielen Dank für deine Teilnahme!</title>
+          <title>Willkommen bei Energiecheck-24!</title>
         </head>
         <body style="margin: 0; padding: 0; background-color: #f7f9fc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
           <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
@@ -144,16 +142,28 @@ export async function POST(request: Request) {
                 <img src="https://hoigzuytnzlkypkruyom.supabase.co/storage/v1/object/public/assets/energicheck.png" alt="Energiecheck-24" width="180" style="display: block; border: 0;">
               </td>
             </tr>
+            
             <tr>
               <td style="padding: 40px 30px; text-align: center;">
-                <h1 style="margin: 0 0 16px 0; font-size: 22px; font-weight: 800; color: #1a202c;">Vielen Dank für deinen Besuch!</h1>
-                <p style="margin: 0 0 24px 0; font-size: 15px; line-height: 1.6; color: #4a5568;">
+                <h1 style="margin: 0 0 16px 0; font-size: 22px; font-weight: 800; color: #1a202c;">Herzlich willkommen & Vielen Dank!</h1>
+                <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 1.6; color: #4a5568;">
                   Hallo <strong>${participant.full_name}</strong>,<br>
-                  schön, dass du bei unserem Gewinnspiel am Stand mitgemacht hast! Auch wenn es diesmal kein Hauptgewinn war, hoffen wir, du hattest jede Menge Spaß.
+                  schön, dass du bei unserem Gewinnspiel am Stand mitgemacht hast! Auch wenn es dieses Mal nicht für einen der Hauptpreise gereicht hat, freuen wir uns sehr über deinen Besuch.
                 </p>
-                <p style="margin: 0 0 30px 0; font-size: 14px; color: #718096;">
-                  Wir wünschen dir einen fantastischen Tag auf dem Event!
+                <p style="margin: 0 0 30px 0; font-size: 15px; line-height: 1.6; color: #4a5568;">
+                  Als neues Mitglied unserer Community laden wir dich herzlich dazu ein, unseren offiziellen Onlineshop zu entdecken y tolle Angebote zu finden.
                 </p>
+
+                <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 30px;">
+                  <tr>
+                    <td align="center" style="border-radius: 8px;" bgcolor="#000000">
+                      <a href="https://energiecheck-24.myshopify.com" target="_blank" style="font-size: 14px; font-weight: bold; color: #ffffff; text-decoration: none; padding: 14px 30px; display: inline-block; border-radius: 8px;">
+                        Zum Onlineshop wechseln ➔
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
                 <hr style="border: 0; border-top: 1px solid #edf2f7; margin-bottom: 24px;">
                 <p style="margin: 0; font-size: 12px; font-weight: bold; color: #1a202c;">Dein Energiecheck-24 Team</p>
               </td>

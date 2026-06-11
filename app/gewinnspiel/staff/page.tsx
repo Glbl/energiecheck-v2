@@ -63,15 +63,15 @@ export default function StaffPanel() {
                 <h4 className="font-bold text-gray-900">{user.full_name}</h4>
                 <p className="text-sm text-gray-500">{user.email} | {user.phone || 'Keine Tel.'}</p>
               </div>
-              <div className="flex gap-2">
-                {[0, 30, 50].map((amount) => (
+              <div className="flex gap-2 self-end sm:self-center">
+                {[0, 10, 30, 50].map((amount) => (
                   <button
                     key={amount} onClick={() => handleAssignPrize(user.id, amount)}
-                    className={`px-4 py-2 rounded-lg font-bold text-sm border ${
+                    className={`px-5 py-2.5 rounded-xl font-black text-sm transition-all active:scale-95 ${
                       amount === 0 ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' : 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200'
                     }`}
                   >
-                    {amount === 0 ? '€0' : `€${amount}`}
+                    {amount === 0 ? '€0 (Niete)' : `€${amount}`}
                   </button>
                 ))}
               </div>

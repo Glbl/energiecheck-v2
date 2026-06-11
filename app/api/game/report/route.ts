@@ -28,6 +28,10 @@ export async function GET() {
 
     // Conteo de inventario disponible por nivel de premio
     const inventory = {
+        prize10: { 
+        used: coupons.filter(c => c.prize_level === 10 && c.is_used).length, 
+        free: coupons.filter(c => c.prize_level === 10 && !c.is_used).length 
+      },
       prize30: { 
         used: coupons.filter(c => c.prize_level === 30 && c.is_used).length, 
         free: coupons.filter(c => c.prize_level === 30 && !c.is_used).length 
