@@ -73,7 +73,7 @@ export default function ClientRegistration() {
           className="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-black"
         />
         <input 
-          type="tel" placeholder="Telefonnummer (Optional)"
+          type="tel" placeholder="Telefonnummer" required
           value={form.phone} onChange={e => setForm({...form, phone: e.target.value})}
           className="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-black"
         />
