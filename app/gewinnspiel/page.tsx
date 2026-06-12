@@ -1,10 +1,23 @@
 'use client';
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react'; // 1. Agregamos useEffect aquí
 
 export default function ClientRegistration() {
   const [form, setForm] = useState({ fullName: '', email: '', phone: '' });
   const [loading, setLoading] = useState(false);
   const [registered, setRegistered] = useState(false);
+
+  // 2. TEMPORIZADOR AUTOMÁTICO: Regresa al formulario después de 7 segundos
+  useEffect(() => {
+    if (registered) {
+      const timer = setTimeout(() => {
+        setRegistered(false);
+        setForm({ fullName: '', email: '', phone: '' }); // Limpia los inputs para el siguiente
+      }, 7000); // 7000 milisegundos = 7 segundos
+
+      return () => clearTimeout(timer); // Limpieza del timer si el componente se desmonta
+    }
+  }, [registered]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,17 +30,29 @@ export default function ClientRegistration() {
       });
       if (res.ok) setRegistered(true);
     } catch (err) {
-      alert('Fehler bei de Registrierung.');
+      alert('Fehler bei der Registrierung.');
     } finally {
       setLoading(false);
     }
   };
 
+  // 3. PANTALLA DE ÉXITO (Actualizada con el botón manual rápido)
   if (registered) {
     return (
-      <div className="max-w-md mx-auto my-20 p-8 text-center bg-white rounded-2xl shadow-xl border">
+      <div className="max-w-md mx-auto my-20 p-8 text-center bg-white rounded-2xl shadow-xl border flex flex-col items-center">
         <h2 className="text-3xl font-extrabold text-green-600 mb-4">Bereit zum Spielen! 🚀</h2>
-        <p className="text-gray-600">Du bist in der Warteschlange. Bitte sag dem Mitarbeiter am Stand deinen Namen, um dein Spiel zu starten.</p>
+        <p className="text-gray-600 mb-6">Du bist in der Warteschlange. Bitte sag dem Mitarbeiter am Stand deinen Namen, um dein Spiel zu starten.</p>
+        
+        {/* BOTÓN MANUAL DE RETORNO RÁPIDO */}
+        <button
+          onClick={() => {
+            setRegistered(false);
+            setForm({ fullName: '', email: '', phone: '' });
+          }}
+          className="px-6 py-2.5 bg-gray-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-all active:scale-95 shadow-sm"
+        >
+          Nächster Teilnehmer →
+        </button>
       </div>
     );
   }
