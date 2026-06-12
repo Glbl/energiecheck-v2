@@ -13,7 +13,7 @@ export default function ClientRegistration() {
       const timer = setTimeout(() => {
         setRegistered(false);
         setForm({ fullName: '', email: '', phone: '' }); // Limpia los inputs para el siguiente
-      }, 7000); // 7000 milisegundos = 7 segundos
+      }, 3000); // 3000 milisegundos = 3 segundos
 
       return () => clearTimeout(timer); // Limpieza del timer si el componente se desmonta
     }
