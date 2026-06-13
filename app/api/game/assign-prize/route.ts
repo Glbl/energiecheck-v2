@@ -20,21 +20,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Teilnehmer nicht gefunden.' }, { status: 404 });
     }
 
+    // 🎯 CONTROL DE PREMIO CONSUELO: Si saca 0, su cupón asignado será de 10€, pero activamos bandera de consuelo
+    const esConsuelo = prizeWon === 0;
+    const nivelPremioBuscado = esConsuelo ? 10 : prizeWon;
     let couponCode = null;
 
-    // 2. Si ganó dinero, secuestramos un cupón único disponible de la base de datos
-    if (prizeWon > 0) {
+    // 2. Secuestramos un cupón único disponible de la base de datos (Tanto para ganadores como para consuelo de 10€)
+    if (nivelPremioBuscado > 0) {
       const { data: coupon, error: cError } = await supabase
         .from('prize_coupons')
         .select('coupon_code')
-        .eq('prize_level', prizeWon)
+        .eq('prize_level', nivelPremioBuscado)
         .eq('is_used', false)
         .limit(1)
         .maybeSingle(); // Trae el primer código libre que encuentre
 
       if (cError || !coupon) {
         return NextResponse.json({ 
-          error: `⚠️ ACHTUNG: Bei Supabase sind keine einzigartigen Gutscheine mehr für die Stufe verfügbar. €${prizeWon}.` 
+          error: `⚠️ ACHTUNG: Bei Supabase sind keine einzigartigen Gutscheine mehr für die Stufe verfügbar. €${nivelPremioBuscado}.` 
         }, { status: 400 });
       }
 
@@ -51,134 +54,147 @@ export async function POST(request: Request) {
         .eq('coupon_code', couponCode);
     }
 
-    // 3. Actualizamos al participante para sacarlo de la cola activa
+    // 3. Actualizamos al participante guardando el premio real recibido en su historial
     await supabase
       .from('game_participants')
-      .update({ prize_won: prizeWon, assigned_coupon: couponCode, status: 'completed' })
+      .update({ 
+        prize_won: prizeWon, // Guarda 0 si fue consuelo, o el valor 10, 30, 50 original
+        assigned_coupon: couponCode, 
+        status: 'completed' 
+      })
       .eq('id', participantId);
 
-    // 4. Construcción del Email con Resend (Estructura Premium Unificada)
-   // 4. Construcción del Email con Resend (Actualizado con €10 y Link a Shopify)
-    let emailSubject = prizeWon > 0 
-      ? `Glückwunsch! Du hast einen €${prizeWon} Gutschein gewonnen!` 
-      : `Vielen Dank für deine Teilnahme!`;
-    
-    let emailHtml = prizeWon > 0 
-      ? `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Herzlichen Glückwunsch!</title>
-        </head>
-        <body style="margin: 0; padding: 0; background-color: #f7f9fc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-          <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
-            <tr>
-              <td align="center" style="padding: 30px 20px; background-color: #000000;">
-                <img src="https://hoigzuytnzlkypkruyom.supabase.co/storage/v1/object/public/assets/energicheck.png" alt="Energiecheck-24" width="180" style="display: block; border: 0;">
-              </td>
-            </tr>
-            
-            <tr>
-              <td style="padding: 40px 30px;">
-                <h1 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 800; color: #1a202c; text-align: center; text-transform: uppercase; letter-spacing: -0.5px;">
-                  🎉 Hauptgewinn getroffen!
-                </h1>
-                <p style="margin: 0 0 24px 0; font-size: 15px; line-height: 1.6; color: #4a5568; text-align: center;">
-                  Hallo <strong>${participant.full_name}</strong>,<br>
-                  vielen Dank für deinen Besuch an unserem Stand! Du hast beim <strong>WIN BIG</strong> Gewinnspiel sensationell abgeräumt.
-                </p>
+    // 4. Construcción del Email Dinámico con tus Nuevos Textos Corporativos en Alemán
+    let emailSubject = '';
+    let cuerpoMensajeHtml = '';
 
-                <div style="background-color: #fff9e6; border: 2px dashed #ffd600; border-radius: 12px; padding: 25px 20px; text-align: center; margin-bottom: 24px;">
-                  <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #b7791f; display: block; margin-bottom: 5px;">Dein Gewinnwert</span>
-                  <span style="font-size: 42px; font-weight: 900; color: #000000; display: block; margin-bottom: 15px;">€ ${prizeWon},00</span>
-                  <span style="font-size: 13px; color: #4a5568; display: block; margin-bottom: 8px;">Nutze deinen exklusiven Rabattcode im Checkout:</span>
-                  <div style="background-color: #ffffff; border: 1px solid #e2e8f0; padding: 12px; font-family: monospace; font-size: 20px; font-weight: bold; color: #df4432; letter-spacing: 2px; border-radius: 8px; display: inline-block; min-width: 200px;">
-                    ${couponCode}
-                  </div>
-                </div>
-
-                <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 30px;">
-                  <tr>
-                    <td align="center" style="border-radius: 8px;" bgcolor="#000000">
-                      <a href="https://energiecheck-24.myshopify.com" target="_blank" style="font-size: 14px; font-weight: bold; color: #ffffff; text-decoration: none; padding: 14px 30px; display: inline-block; border-radius: 8px;">
-                        Gutschein einlösen ➔
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-
-                <hr style="border: 0; border-top: 1px solid #edf2f7; margin-bottom: 24px;">
-
-                <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #718096; text-align: center;">
-                  *Der Gutschein ist bis zum 01. August 2026 gültig und kann einmalig für deine Bestellung auf energiecheck-24.myshopify.com angewendet werden.
-                </p>
-              </td>
-            </tr>
-
-            <tr>
-              <td style="padding: 24px; background-color: #f7f9fc; border-top: 1px solid #edf2f7; text-align: center;">
-                <p style="margin: 0 0 6px 0; font-size: 12px; font-weight: bold; color: #1a202c;">Energiecheck-24 Team</p>
-                <p style="margin: 0; font-size: 11px; color: #a0aec0;">© 2026 Energiecheck-24. Alle Rechte vorbehalten.</p>
-              </td>
-            </tr>
-          </table>
-        </body>
-        </html>
-      `
-      : `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Willkommen bei Energiecheck-24!</title>
-        </head>
-        <body style="margin: 0; padding: 0; background-color: #f7f9fc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-          <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
-            <tr>
-              <td align="center" style="padding: 30px 20px; background-color: #000000;">
-                <img src="https://hoigzuytnzlkypkruyom.supabase.co/storage/v1/object/public/assets/energicheck.png" alt="Energiecheck-24" width="180" style="display: block; border: 0;">
-              </td>
-            </tr>
-            
-            <tr>
-              <td style="padding: 40px 30px; text-align: center;">
-                <h1 style="margin: 0 0 16px 0; font-size: 22px; font-weight: 800; color: #1a202c;">Herzlich willkommen & Vielen Dank!</h1>
-                <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 1.6; color: #4a5568;">
-                  Hallo <strong>${participant.full_name}</strong>,<br>
-                  schön, dass du bei unserem Gewinnspiel am Stand mitgemacht hast! Auch wenn es dieses Mal nicht für einen der Hauptpreise gereicht hat, freuen wir uns sehr über deinen Besuch.
-                </p>
-                <p style="margin: 0 0 30px 0; font-size: 15px; line-height: 1.6; color: #4a5568;">
-                  Als neues Mitglied unserer Community laden wir dich herzlich dazu ein, unseren offiziellen Onlineshop zu entdecken y tolle Angebote zu finden.
-                </p>
-
-                <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 30px;">
-                  <tr>
-                    <td align="center" style="border-radius: 8px;" bgcolor="#000000">
-                      <a href="https://energiecheck-24.myshopify.com" target="_blank" style="font-size: 14px; font-weight: bold; color: #ffffff; text-decoration: none; padding: 14px 30px; display: inline-block; border-radius: 8px;">
-                        Zum Onlineshop wechseln ➔
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-
-                <hr style="border: 0; border-top: 1px solid #edf2f7; margin-bottom: 24px;">
-                <p style="margin: 0; font-size: 12px; font-weight: bold; color: #1a202c;">Dein Energiecheck-24 Team</p>
-              </td>
-            </tr>
-          </table>
-        </body>
-        </html>
+    if (esConsuelo) {
+      // 📝 TEXTO NUEVO: Perdedor con Premio Consuelo de 10€
+      emailSubject = `🎉 Vielen Dank für Ihre Teilnahme!`;
+      cuerpoMensajeHtml = `
+        <h1 style="margin: 0 0 16px 0; font-size: 22px; font-weight: 800; color: #1a202c; text-align: center;">
+          🎉 Vielen Dank für Ihre Teilnahme!
+        </h1>
+        <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.6; color: #4a5568;">
+          Auch wenn Sie heute keinen Hauptgewinn erzielt haben, erhalten Sie von uns einen <strong>10 € Trostpreis-Gutschein</strong> für Ihren nächsten Einkauf bei Energiecheck-24.
+        </p>
+        <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.6; color: #4a5568; font-weight: bold;">
+          Zusätzlich profitieren Sie von folgenden Vorteilen:
+        </p>
+        <ul style="margin: 0 0 24px 0; padding-left: 20px; font-size: 14px; line-height: 1.6; color: #4a5568; text-align: left;">
+          <li>10 € Trostpreis-Gutschein für Ihre nächste Bestellung</li>
+          <li>Automatische Teilnahme an unserem Gewinnspiel</li>
+          <li>Gewinnchance auf Fußballtickets</li>
+          <li>Gewinnchance auf ein Original-Fußballtrikot</li>
+          <li>Zusätzlich einen 50 € EDEKA-Gutschein bei erfolgreicher Bestellung</li>
+        </ul>
+        
+        <div style="background-color: #fff9e6; border: 2px dashed #ffd600; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 24px;">
+          <span style="font-size: 13px; color: #4a5568; display: block; margin-bottom: 8px;">Hier ist Ihr 10 € Gutscheincode:</span>
+          <div style="background-color: #ffffff; border: 1px solid #e2e8f0; padding: 12px; font-family: monospace; font-size: 20px; font-weight: bold; color: #df4432; letter-spacing: 2px; border-radius: 8px; display: inline-block;">
+            ${couponCode}
+          </div>
+        </div>
+        
+        <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #4a5568;">
+          Nutzen Sie diesen Gutscheincode bei Ihrer Bestellung und sichern Sie sich alle zusätzlichen Vorteile. Lösen Sie Ihren Gutscheincode einfach bei Ihrer nächsten Bestellung auf unserer Website ein.
+        </p>
       `;
+    } else {
+      // 📝 TEXTO NUEVO: Ganadores Legítimos (10€, 30€ o 50€)
+      emailSubject = `Herzlichen Glückwunsch!`;
+      cuerpoMensajeHtml = `
+        <h1 style="margin: 0 0 16px 0; font-size: 22px; font-weight: 800; color: #1a202c; text-align: center;">
+          Herzlichen Glückwunsch!
+        </h1>
+        <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.6; color: #4a5568;">
+          Sie haben heute bei unserem Gewinnspiel einen <strong>${nivelPremioBuscado} € Gutschein</strong> gewonnen.
+        </p>
+        <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.6; color: #4a5568; font-weight: bold;">
+          Nutzen Sie Ihren Gutscheincode bei Ihrer nächsten Bestellung und profitieren Sie zusätzlich von folgenden Vorteilen:
+        </p>
+        <ul style="margin: 0 0 24px 0; padding-left: 20px; font-size: 14px; line-height: 1.6; color: #4a5568; text-align: left;">
+          <li>Automatische Teilnahme an unserem Gewinnspiel</li>
+          <li>Gewinnchance auf exklusive Fußballtickets</li>
+          <li>Gewinnchance auf ein Original-Fußballtrikot</li>
+          <li>Zusätzlich einen 50 € EDEKA-Gutschein bei erfolgreicher Bestellung</li>
+        </ul>
+        
+        <div style="background-color: #fff9e6; border: 2px dashed #ffd600; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 24px;">
+          <span style="font-size: 13px; color: #4a5568; display: block; margin-bottom: 8px;">Ihr persönlicher Gutscheincode für Ihren Gewinn lautet:</span>
+          <div style="background-color: #ffffff; border: 1px solid #e2e8f0; padding: 12px; font-family: monospace; font-size: 20px; font-weight: bold; color: #df4432; letter-spacing: 2px; border-radius: 8px; display: inline-block;">
+            ${couponCode}
+          </div>
+        </div>
+        
+        <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #4a5568;">
+          Lösen Sie Ihren Gutscheincode einfach bei Ihrer nächsten Bestellung auf unserer Website ein.
+        </p>
+      `;
+    }
 
-    // Envío del Email definitivo con remitente corporativo
+    // Estructura de plantilla HTML Premium Unificada (Aplica para ambos casos)
+    const emailHtmlFinal = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${emailSubject}</title>
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #f7f9fc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+        <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
+          <tr>
+            <td align="center" style="padding: 30px 20px; background-color: #000000;">
+              <img src="https://hoigzuytnzlkypkruyom.supabase.co/storage/v1/object/public/assets/energicheck.png" alt="Energiecheck-24" width="180" style="display: block; border: 0;">
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding: 40px 30px; text-align: center;">
+              
+              ${cuerpoMensajeHtml}
+
+              <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 30px;">
+                <tr>
+                  <td align="center" style="border-radius: 8px;" bgcolor="#000000">
+                    <a href="https://energiecheck-24.myshopify.com" target="_blank" style="font-size: 14px; font-weight: bold; color: #ffffff; text-decoration: none; padding: 14px 30px; display: inline-block; border-radius: 8px;">
+                      Gutschein einlösen ➔
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 1.6; color: #4a5568; font-weight: bold;">
+                🍀 Vielen Dank für ${esConsuelo ? 'Ihre Teilnahme' : 'Ihren Besuch!'}
+              </p>
+
+              <hr style="border: 0; border-top: 1px solid #edf2f7; margin-bottom: 24px;">
+
+              <p style="margin: 0; font-size: 11px; line-height: 1.5; color: #718096; text-align: center;">
+                *Der Gutschein kann einmalig für deine Bestellung auf energiecheck-24.myshopify.com angewendet werden.<br>
+                Hinweis: Bei PayPal-Zahlung wird der Gutscheinrabatt später gutgeschrieben.
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 24px; background-color: #f7f9fc; border-top: 1px solid #edf2f7; text-align: center;">
+              <p style="margin: 0 0 6px 0; font-size: 12px; font-weight: bold; color: #1a202c;">Ihr Energiecheck-24 Team</p>
+              <p style="margin: 0; font-size: 11px; color: #a0aec0;">© 2026 Energiecheck-24. Alle Rechte vorbehalten.</p>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    // Envío del Email definitivo con remitente corporativo oficial anti-spam
     await resend.emails.send({
       from: 'Energiecheck-24 Gewinnspiel <tarif@energiecheck-24.de>',
       to: [participant.email],
       subject: emailSubject,
-      html: emailHtml,
+      html: emailHtmlFinal,
     });
 
     return NextResponse.json({ success: true });
