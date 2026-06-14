@@ -33,7 +33,7 @@ function CheckoutExpressContent() {
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   // 3. Procesamiento del envío hacia la API interna /api/checkout
-  const handleCheckout = async (tipoPago: 'contado' | '12_meses' | '24_meses') => {
+  const handleCheckout = async (tipoPago: 'Stelle' | '12_Monate' | '24_Monate') => {
     setLoading(tipoPago);
     try {
       const res = await fetch('/api/checkout', {
@@ -111,27 +111,27 @@ function CheckoutExpressContent() {
           
           {/* BOTÓN 1: PAGO AL CONTADO */}
           <button
-            onClick={() => handleCheckout('contado')}
+            onClick={() => handleCheckout('Stelle')}
             disabled={loading !== null}
             className="w-full py-4 px-4 bg-white hover:bg-zinc-100 text-black font-bold rounded-xl transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed shadow-md text-sm"
           >
-            {loading === 'contado' ? 'Procesando...' : 'Mit Stripe / PayPal bezahlen'}
+            {loading === 'Stelle' ? 'Procesando...' : 'Mit Stripe / PayPal bezahlen'}
           </button>
 
           {/* BOTÓN 2: FINANCIAMIENTO 12 MESES */}
           <button
-            onClick={() => handleCheckout('12_meses')}
+            onClick={() => handleCheckout('12_Monate')}
             disabled={loading !== null}
             className="w-full py-4 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-md"
           >
-            {loading === '12_meses' 
+            {loading === '12_Monate' 
               ? 'Ablauf...' 
               : `In 12 Teilzahlungen (€${(subtotal / 12).toFixed(2)}/Monat)`}
           </button>
 
           {/* BOTÓN 3: FINANCIAMIENTO 24 MESES */}
           <button
-            onClick={() => handleCheckout('24_meses')}
+            onClick={() => handleCheckout('24_Monate')}
             disabled={loading !== null}
             className="w-full py-4 px-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-md"
           >

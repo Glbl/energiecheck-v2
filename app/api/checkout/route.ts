@@ -10,13 +10,15 @@ export async function POST(req: Request) {
     const { cartItems, tipoPago } = await req.json();
 
     if (!cartItems || cartItems.length === 0) {
-      return NextResponse.json({ error: 'El carrito está vacío' }, { status: 400 });
+      return NextResponse.json({ error: 'Der Einkaufswagen ist leer.' }, { status: 400 });
     }
 
     const origin = req.headers.get('origin') || 'https://energiecheck-v2.vercel.app';
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || origin;
 
     const lineItems = [];
+    // 🎯 VALIDACIÓN BLINDADA: Nos aseguramos de limpiar cualquier espacio o formato
+    const tipoPagoLimpio = String(tipoPago).trim();
     const esFinanciado = tipoPago === '12_Monate' || tipoPago === '24_Monate';
     const numeroCuotas = tipoPago === '12_Monate' ? 12 : 24;
 
@@ -93,7 +95,7 @@ export async function POST(req: Request) {
           unit_amount: montoMensualCentavos,
           currency: 'eur',
           recurring: { interval: 'month', interval_count: 1 },
-          nickname: `Financiamiento ${numeroCuotas} Monate - ${item.title}`,
+          nickname: `Finanzierung ${numeroCuotas} Monate - ${item.title}`,
         });
         precioId = precioRecurrente.id;
       } else {
@@ -101,7 +103,7 @@ export async function POST(req: Request) {
           product: stripeProductoId,
           unit_amount: montoTotalCentavos,
           currency: 'eur',
-          nickname: `Pago Único - ${item.title}`,
+          nickname: `Einmalzahlung - ${item.title}`,
         });
         precioId = precioUnico.id;
       }
@@ -115,9 +117,10 @@ export async function POST(req: Request) {
     // 4. Configuración de la Pasarela de Checkout de Stripe
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       line_items: lineItems,
+      // 🚨 CRÍTICO: Si es financiado cambiamos el modo obligatoriamente a 'subscription'
       mode: esFinanciado ? 'subscription' : 'payment',
       success_url: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: 'https://energiecheck-24.myshopify.com/en/cart', // Retorno al carrito oficial
+      cancel_url: 'https://energiecheck-24.myshopify.com/cart', // Retorno al carrito oficial
       allow_promotion_codes: true, // Cupones habilitados
     };
 
